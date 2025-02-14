@@ -1,6 +1,6 @@
 use super::Instance;
 use crate::task_channel::create_task_channel;
-use crate::{log_debug, log_warn, DriverOperations, Reactor, TaskReceiver};
+use crate::{log_debug, log_warn, DriverOperations, Engine, TaskReceiver};
 use crate::{Error, Notification, ProductionOrder};
 use std::sync::Arc;
 use std::time::Duration;
@@ -31,7 +31,7 @@ impl InstanceMonitor {
     ///
     /// Constructor
     pub fn new(
-        reactor: Reactor,
+        reactor: Engine,
         r_notifier: Option<Sender<Notification>>,
         operations: Box<dyn DriverOperations>,
         production_order: ProductionOrder,

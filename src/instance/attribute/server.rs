@@ -5,14 +5,11 @@ use crate::tracing::Logger;
 use crate::AlertNotification;
 use crate::AttributeBuilder;
 use crate::Error;
-use crate::MessageClient;
 use crate::MessageCodec;
-use crate::MessageDispatcher;
 use crate::MessageHandler;
 use crate::Notification;
 use async_trait::async_trait;
 use bytes::Bytes;
-use rumqttc::QoS;
 use std::sync::Arc;
 use std::sync::Weak;
 use tokio::sync::mpsc::Sender;
@@ -190,14 +187,14 @@ impl<TYPE: MessageCodec> AttServer<TYPE> {
         let value = value.into();
         let pyl_size = value.len();
 
-        self.message_client
-            .publish(&self.topic_att, QoS::AtMostOnce, true, value)
-            .await
-            .map_err(|e| Error::PublishError {
-                topic: self.topic_att.clone(),
-                pyl_size: pyl_size,
-                cause: e.to_string(),
-            })
+        // self.message_client
+        // .publish(&self.topic_att, QoS::AtMostOnce, true, value)
+        // .await
+        // .map_err(|e| Error::PublishError {
+        //     topic: self.topic_att.clone(),
+        //     pyl_size: pyl_size,
+        //     cause: e.to_string(),
+        // })
     }
 
     /// Request attribute server disabling

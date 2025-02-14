@@ -3,22 +3,33 @@
 //! This crate is the heart of Panduza platform and plugins
 //!
 
-#![deny(
-    while_true,
-    improper_ctypes,
-    non_shorthand_field_patterns,
-    no_mangle_generic_items,
-    overflowing_literals,
-    path_statements,
-    patterns_in_fns_without_body,
-    unconditional_recursion,
-    bad_style,
-    dead_code,
-    unused,
-    unused_allocation,
-    unused_comparisons,
-    unused_parens
-)]
+// #![deny(
+//     while_true,
+//     improper_ctypes,
+//     non_shorthand_field_patterns,
+//     no_mangle_generic_items,
+//     overflowing_literals,
+//     path_statements,
+//     patterns_in_fns_without_body,
+//     unconditional_recursion,
+//     bad_style,
+//     dead_code,
+//     unused,
+//     unused_allocation,
+//     unused_comparisons,
+//     unused_parens
+// )]
+
+/// Main error crate for Panduza Platform
+///
+mod error;
+pub use error::Error;
+
+/// The engine is the core object that will handle the connections and the events
+///
+mod engine;
+pub use engine::options::EngineOptions;
+pub use engine::Engine;
 
 ///
 ///
@@ -27,94 +38,75 @@ pub mod pmacro;
 pub mod topic;
 pub use topic::Topic;
 
-// Main error crate for Panduza Platform
-mod error;
-pub use error::Error;
-
 ///
-mod factory;
-pub use factory::production_order::InstanceSettings;
-pub use factory::production_order::ProductionOrder;
-pub use factory::store::Product;
-pub use factory::store::Store;
-pub use factory::Factory;
-pub use factory::ScanMachine;
+// mod factory;
+// pub use factory::production_order::InstanceSettings;
+// pub use factory::production_order::ProductionOrder;
+// pub use factory::store::Product;
+// pub use factory::store::Store;
+// pub use factory::Factory;
+// pub use factory::ScanMachine;
 
 //
-pub mod instance;
-pub use instance::class::Class;
-pub use instance::class_builder::ClassBuilder;
-pub use instance::container::Container;
-pub use instance::monitor::InstanceMonitor;
-pub use instance::Instance;
-pub use instance::InstanceInner;
+// pub mod instance;
+// pub use instance::class::Class;
+// pub use instance::class_builder::ClassBuilder;
+// pub use instance::container::Container;
+// pub use instance::monitor::InstanceMonitor;
+// pub use instance::Instance;
+// pub use instance::InstanceInner;
 
 //
-pub use instance::attribute::builder::AttributeBuilder;
-pub use instance::attribute::server_boolean::BooleanAttServer;
-pub use instance::attribute::server_enum::EnumAttServer;
-pub use instance::attribute::server_json::JsonAttServer;
-pub use instance::attribute::server_mem_cmd::MemoryCommandAttServer;
-pub use instance::attribute::server_number::NumberAttServer;
-pub use instance::attribute::server_si::SiAttServer;
-pub use instance::attribute::server_string::StringAttServer;
+// pub use instance::attribute::builder::AttributeBuilder;
+// pub use instance::attribute::server_boolean::BooleanAttServer;
+// pub use instance::attribute::server_enum::EnumAttServer;
+// pub use instance::attribute::server_json::JsonAttServer;
+// pub use instance::attribute::server_mem_cmd::MemoryCommandAttServer;
+// pub use instance::attribute::server_number::NumberAttServer;
+// pub use instance::attribute::server_si::SiAttServer;
+// pub use instance::attribute::server_string::StringAttServer;
 
 // public traits
-mod traits;
-pub use traits::DriverOperations;
-pub use traits::MessageCodec;
-pub use traits::MessageHandler;
-pub use traits::Producer;
-pub use traits::Scanner;
+// mod traits;
+// pub use traits::DriverOperations;
+// pub use traits::MessageCodec;
+// pub use traits::MessageHandler;
+// pub use traits::Producer;
+// pub use traits::Scanner;
 
 //
-mod reactor;
-pub use reactor::message_dispatcher::MessageDispatcher;
-pub use reactor::settings::ReactorSettings;
-pub use reactor::Reactor;
-
-// This module manage the message attributes (MQTT/TCP)
-// pub mod msg;
-pub type MessageClient = rumqttc::AsyncClient;
-
-//
-mod codec;
-pub use codec::boolean::BooleanCodec;
-pub use codec::eenum::EnumCodec;
-pub use codec::json::JsonCodec;
-pub use codec::memory_command::MemoryCommandCodec;
-pub use codec::memory_command::MemoryCommandMode;
-pub use codec::number::NumberCodec;
-pub use codec::number_list::NumberListCodec;
-pub use codec::raw::RawCodec;
-pub use codec::si::SiCodec;
-pub use codec::string::StringCodec;
-pub use codec::string_list::StringListCodec;
-
-mod task_channel;
-pub use task_channel::create_task_channel;
-pub use task_channel::TaskReceiver;
-pub use task_channel::TaskSender;
+// mod codec;
+// pub use codec::boolean::BooleanCodec;
+// pub use codec::eenum::EnumCodec;
+// pub use codec::json::JsonCodec;
+// pub use codec::memory_command::MemoryCommandCodec;
+// pub use codec::memory_command::MemoryCommandMode;
+// pub use codec::number::NumberCodec;
+// pub use codec::number_list::NumberListCodec;
+// pub use codec::raw::RawCodec;
+// pub use codec::si::SiCodec;
+// pub use codec::string::StringCodec;
+// pub use codec::string_list::StringListCodec;
 
 /// Return type for spawned task
 pub type TaskResult = Result<(), Error>;
 
 //
-pub mod plugin;
-pub use plugin::Plugin;
+// pub mod plugin;
+// pub use plugin::Plugin;
 
-pub mod runtime;
-pub use runtime::Runtime;
+// pub mod runtime;
+// pub use runtime::Runtime;
 
 pub mod env;
 
-pub use runtime::notification::attribute::AttributeMode;
-pub use runtime::notification::group::NotificationGroup;
-pub use runtime::notification::AlertNotification;
-pub use runtime::notification::AttributeNotification;
-pub use runtime::notification::ClassNotification;
-pub use runtime::notification::Notification;
-pub use runtime::notification::StateNotification;
+// pub use runtime::notification::attribute::AttributeMode;
+// pub use runtime::notification::group::NotificationGroup;
+// pub use runtime::notification::AlertNotification;
+// pub use runtime::notification::AttributeNotification;
+// pub use runtime::notification::ClassNotification;
+// pub use runtime::notification::Notification;
+// pub use runtime::notification::StateNotification;
 
 /// Module that manage platform traces and logs
 ///
@@ -154,7 +146,7 @@ pub use tracing::InstanceLogger;
 /// - usb => for usb drivers (also enable usb)
 /// - serial => for serial drivers (also enable usb)
 ///
-pub mod connector;
+// pub mod connector;
 
 /// Currently we put here a trait waiting to see if there is a better use later
 ///
@@ -171,7 +163,6 @@ pub use props::Props;
 ///
 ///
 ///
-pub mod std;
-
+// pub mod std;
 pub mod stable_number;
 pub use stable_number::StableNumber;

@@ -10,8 +10,8 @@ pub mod monitor;
 pub use container::Container;
 
 use crate::{
-    reactor::Reactor, AttributeBuilder, DriverOperations, Error, InstanceSettings, Notification,
-    TaskResult, TaskSender,
+    engine::Engine, AttributeBuilder, DriverOperations, Error, InstanceSettings, Notification,
+    TaskResult,
 };
 use crate::{Logger, StateNotification};
 use class_builder::ClassBuilder;
@@ -69,7 +69,7 @@ pub struct Instance {
     ///
     /// Manage all MQTT communications
     ///
-    reactor: Reactor,
+    reactor: Engine,
 
     // ///
     // /// Device must share its status with the device "_" through this info object
@@ -103,7 +103,7 @@ impl Instance {
     /// Create a new instance of the Device
     ///
     pub fn new(
-        reactor: Reactor,
+        reactor: Engine,
         r_notifier: Option<Sender<Notification>>,
         spawner: TaskSender<Result<(), Error>>,
         name: String,
@@ -135,7 +135,7 @@ impl Instance {
 
     /// Simple getter for Reactor
     ///
-    pub fn reactor(&self) -> &Reactor {
+    pub fn reactor(&self) -> &Engine {
         &self.reactor
     }
 

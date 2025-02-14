@@ -13,8 +13,6 @@ panduza = { path = "C:/Users/xavie/workspace/panduza-rust" }
 
 # Main async framework for the platform
 tokio = { version = "1.43.0", features = ["full", "tracing"] }
-# MQTT async client
-rumqttc = "0.24.0"
 # Async trait support
 async-trait = "0.1.86"
 # Futures support

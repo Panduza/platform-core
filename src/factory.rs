@@ -4,7 +4,7 @@ use store::{Product, Store};
 use tokio::sync::mpsc::Sender;
 
 use crate::{
-    FactoryLogger, Instance, InstanceMonitor, Notification, Producer, ProductionOrder, Reactor,
+    FactoryLogger, Instance, InstanceMonitor, Notification, Producer, ProductionOrder, Engine,
     Scanner,
 };
 use std::{collections::HashMap, ffi::CString};
@@ -106,7 +106,7 @@ impl Factory {
     ///
     pub fn produce(
         &self,
-        reactor: Reactor,
+        reactor: Engine,
         r_notifier: Option<Sender<Notification>>,
         production_order: ProductionOrder,
     ) -> (InstanceMonitor, Instance) {

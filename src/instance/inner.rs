@@ -1,4 +1,4 @@
-use crate::{InstanceSettings, Reactor};
+use crate::{Engine, InstanceSettings};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
@@ -6,7 +6,7 @@ use tokio::sync::Mutex;
 pub struct InstanceInner {
     ///
     ///
-    pub reactor: Reactor,
+    pub reactor: Engine,
 
     /// Settings of the device, provided by the user
     ///
@@ -14,7 +14,7 @@ pub struct InstanceInner {
 }
 
 impl InstanceInner {
-    pub fn new(reactor: Reactor, settings: Option<InstanceSettings>) -> InstanceInner {
+    pub fn new(reactor: Engine, settings: Option<InstanceSettings>) -> InstanceInner {
         InstanceInner {
             reactor: reactor,
             settings: settings,

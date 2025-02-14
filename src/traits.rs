@@ -1,4 +1,4 @@
-use crate::{Instance, Error, ProductionOrder, Props};
+use crate::{Error, Instance, ProductionOrder, Props};
 use async_trait::async_trait;
 use bytes::Bytes;
 use std::fmt::Debug;
