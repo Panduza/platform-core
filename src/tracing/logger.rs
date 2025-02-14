@@ -46,6 +46,12 @@ impl Logger {
         Self::new("Platform", "", "", "")
     }
 
+    /// Create a logger configured for platform services
+    ///
+    pub fn new_for_platform_service<A: Into<String>>(name: A) -> Self {
+        Self::new("Service", name, "", "")
+    }
+
     /// Create a logger configured for runtime from its name
     ///
     pub fn new_for_runtime() -> Self {
