@@ -25,6 +25,26 @@
 mod error;
 pub use error::Error;
 
+/// Module that manage platform traces and logs
+///
+/// ## Debug level policy
+///
+/// Those logs will always be in logs for release build mode.
+/// They have to provides as much information as possible to debug
+/// without impacting system performances.
+///
+/// ## Trace level policy
+///
+/// Those logs are available only on debug build mode.
+/// They must be used only in developpement steps and deep investigations.
+///
+pub mod tracing;
+pub use tracing::Logger; // only this one must stay at the end (others deprecated)
+
+/// Client public export
+///
+pub use panduza::TaskMonitor;
+
 /// The engine is the core object that will handle the connections and the events
 ///
 mod engine;
@@ -107,26 +127,6 @@ pub mod env;
 // pub use runtime::notification::ClassNotification;
 // pub use runtime::notification::Notification;
 // pub use runtime::notification::StateNotification;
-
-/// Module that manage platform traces and logs
-///
-/// ## Debug level policy
-///
-/// Those logs will always be in logs for release build mode.
-/// They have to provides as much information as possible to debug
-/// without impacting system performances.
-///
-/// ## Trace level policy
-///
-/// Those logs are available only on debug build mode.
-/// They must be used only in developpement steps and deep investigations.
-///
-pub mod tracing;
-pub use tracing::Logger; // only this one must stay at the end (others deprecated)
-
-pub use tracing::DriverLogger;
-pub use tracing::FactoryLogger;
-pub use tracing::InstanceLogger;
 
 /// Built-in Protocols & Interfaces to help coding plugins
 ///
