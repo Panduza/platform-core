@@ -8,7 +8,8 @@ readme = "README.md"
 [dependencies]
 
 # Panduza Rust Client
-panduza = { path = "C:/Users/rodriguez.NET/Documents/workspace/50-PROJET/XX-XXXX-PZA/panduza-rust" }
+# panduza = { path = "C:/Users/rodriguez.NET/Documents/workspace/50-PROJET/XX-XXXX-PZA/panduza-rust" }
+panduza = { path = "C:/Users/xavie/workspace/panduza-rust" }
 
 # Main async framework for the platform
 tokio = { version = "1.43.0", features = ["full", "tracing"] }
@@ -24,7 +25,7 @@ serde = { version = "1.0.217", features = ["derive"] }
 serde_json = "1.0.138"
 # Regex management
 regex = "1.11.1"
-# Bytes array management
+# Bytes zero copy mangement
 bytes = "1.10.0"
 # Error management
 thiserror = "2.0.11"

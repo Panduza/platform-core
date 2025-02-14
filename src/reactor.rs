@@ -2,6 +2,8 @@ pub mod settings;
 use async_trait::async_trait;
 use bytes::Bytes;
 use futures::FutureExt;
+use panduza::pubsub::PubSubOperator;
+use panduza::router::RouterHandler;
 pub use settings::ReactorSettings;
 
 use crate::{AttributeBuilder, Error, MessageDispatcher, MessageHandler, TaskResult, TaskSender};
@@ -48,22 +50,20 @@ struct PzaScanMessageHandler {
 /// All the attribute and objects will be powered by the reactor
 ///
 #[derive(Clone)]
-pub struct Reactor {
+pub struct Reactor<O: PubSubOperator> {
     is_started: bool,
 
     /// Root topic (namespace/pza)
     root_topic: String,
 
-    /// The mqtt client
-    message_client: Option<MessageClient>,
+    scan_handler: Option<Arc<Mutex<PzaScanMessageHandler>>>,
 
     ///
-    message_dispatcher: Arc<Mutex<MessageDispatcher>>,
-
-    scan_handler: Option<Arc<Mutex<PzaScanMessageHandler>>>,
+    ///
+    router: RouterHandler<O>,
 }
 
-impl Reactor {
+impl<O: PubSubOperator> Reactor<O> {
     /// Create a new Reactor
     ///
     /// # Arguments
@@ -76,7 +76,7 @@ impl Reactor {
         // Server hostname
         // let hostname = hostname::get().unwrap().to_string_lossy().to_string();
 
-        Reactor {
+        Self {
             is_started: false,
             root_topic: format!("pza"),
             message_client: None,
@@ -154,4 +154,21 @@ impl Reactor {
             r_notifier,
         )
     }
+}
+
+/// Start the reactor
+///
+pub async fn new_reactor(options: ReactorOptions) -> Result<Reactor<impl PubSubOperator>, String> {
+    let router = new_mqtt_router(options.pubsub_options).map_err(|e| e.to_string())?;
+
+    let handler = router.start(None).await.unwrap();
+
+    let structure_data_receiver = handler.register_listener("pza/_/structure/att", 5).await?;
+
+    let structure = Structure::new(structure_data_receiver);
+    let structure_initialized = structure.initialized_notifier();
+
+    structure_initialized.notified().await;
+
+    Ok(Reactor::new(structure, handler))
 }
