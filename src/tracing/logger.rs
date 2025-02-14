@@ -52,6 +52,12 @@ impl Logger {
         Self::new("Service", name, "", "")
     }
 
+    /// Create a logger configured for factory from its name
+    ///
+    pub fn new_for_factory() -> Self {
+        Self::new("Factory", "", "", "")
+    }
+
     /// Create a logger configured for runtime from its name
     ///
     pub fn new_for_runtime() -> Self {

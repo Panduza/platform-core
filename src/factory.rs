@@ -1,19 +1,19 @@
+pub mod producer;
+pub use producer::Producer;
+
 pub mod production_order;
 pub mod store;
 use store::{Product, Store};
 use tokio::sync::mpsc::Sender;
 
-use crate::{
-    FactoryLogger, Instance, InstanceMonitor, Notification, Producer, ProductionOrder, Engine,
-    Scanner,
-};
+use crate::{Engine, Logger, ProductionOrder};
 use std::{collections::HashMap, ffi::CString};
 
 /// Factory to create devices from a configuration json
 ///
 pub struct Factory {
     /// Local logger
-    logger: FactoryLogger,
+    logger: Logger,
     /// List of known producers
     producers: HashMap<String, Box<dyn Producer>>,
 }
@@ -24,7 +24,7 @@ impl Factory {
     pub fn new() -> Factory {
         // New object
         let obj = Factory {
-            logger: FactoryLogger::new(),
+            logger: Logger::new_for_factory(),
             producers: HashMap::new(),
         };
         // Info log
@@ -128,7 +128,7 @@ impl Factory {
 ///
 pub struct ScanMachine {
     /// Local logger
-    logger: FactoryLogger,
+    logger: Logger,
     ///
     scanners: Vec<Box<dyn Scanner>>,
 }
@@ -138,7 +138,7 @@ impl ScanMachine {
     pub fn new() -> Self {
         // New object
         let obj = Self {
-            logger: FactoryLogger::new(),
+            logger: Logger::new_for_factory(),
             scanners: Vec::new(),
         };
         // Info log

@@ -44,12 +44,27 @@ pub use tracing::Logger; // only this one must stay at the end (others deprecate
 /// Client public export
 ///
 pub use panduza::TaskMonitor;
-
 /// The engine is the core object that will handle the connections and the events
 ///
 mod engine;
 pub use engine::options::EngineOptions;
 pub use engine::Engine;
+
+/// Plugin object
+///
+pub mod plugin;
+pub use plugin::Plugin;
+
+///
+///
+mod factory;
+pub use factory::producer::Producer;
+pub use factory::production_order::InstanceSettings;
+pub use factory::production_order::ProductionOrder;
+pub use factory::store::Product;
+pub use factory::store::Store;
+pub use factory::Factory;
+pub use factory::ScanMachine;
 
 ///
 ///
@@ -57,15 +72,6 @@ pub mod pmacro;
 
 pub mod topic;
 pub use topic::Topic;
-
-///
-// mod factory;
-// pub use factory::production_order::InstanceSettings;
-// pub use factory::production_order::ProductionOrder;
-// pub use factory::store::Product;
-// pub use factory::store::Store;
-// pub use factory::Factory;
-// pub use factory::ScanMachine;
 
 //
 // pub mod instance;
@@ -110,10 +116,6 @@ pub use topic::Topic;
 
 /// Return type for spawned task
 pub type TaskResult = Result<(), Error>;
-
-//
-// pub mod plugin;
-// pub use plugin::Plugin;
 
 // pub mod runtime;
 // pub use runtime::Runtime;
