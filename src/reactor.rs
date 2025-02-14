@@ -3,10 +3,7 @@ use async_trait::async_trait;
 use bytes::Bytes;
 use futures::FutureExt;
 pub use settings::ReactorSettings;
-mod message_engine;
-use message_engine::MessageEngine;
-use tokio::sync::mpsc::Sender;
-pub mod message_dispatcher;
+
 use crate::{AttributeBuilder, Error, MessageDispatcher, MessageHandler, TaskResult, TaskSender};
 use crate::{MessageClient, Notification};
 use chrono::prelude::*;
@@ -16,34 +13,35 @@ use rumqttc::AsyncClient;
 use rumqttc::{MqttOptions, QoS};
 use std::sync::Arc;
 use std::time::Duration;
+use tokio::sync::mpsc::Sender;
 use tokio::sync::Mutex;
 
 struct PzaScanMessageHandler {
     message_client: MessageClient,
 }
 
-#[async_trait]
-impl MessageHandler for PzaScanMessageHandler {
-    async fn on_message(&mut self, _incomming_data: &Bytes) -> Result<(), Error> {
-        // let hostname = hostname::get().unwrap().to_string_lossy().to_string();
-        let now = Utc::now();
+// #[async_trait]
+// impl MessageHandler for PzaScanMessageHandler {
+//     async fn on_message(&mut self, _incomming_data: &Bytes) -> Result<(), Error> {
+//         // let hostname = hostname::get().unwrap().to_string_lossy().to_string();
+//         let now = Utc::now();
 
-        self.message_client
-            .publish(
-                format!("pza"),
-                QoS::AtLeastOnce,
-                false,
-                format!("{}", now.timestamp_millis()),
-            )
-            .await
-            .map_err(|e| Error::PublishError {
-                topic: "pza".to_string(),
-                pyl_size: now.timestamp_millis().to_string().len(),
-                cause: e.to_string(),
-            })?;
-        Ok(())
-    }
-}
+//         self.message_client
+//             .publish(
+//                 format!("pza"),
+//                 QoS::AtLeastOnce,
+//                 false,
+//                 format!("{}", now.timestamp_millis()),
+//             )
+//             .await
+//             .map_err(|e| Error::PublishError {
+//                 topic: "pza".to_string(),
+//                 pyl_size: now.timestamp_millis().to_string().len(),
+//                 cause: e.to_string(),
+//             })?;
+//         Ok(())
+//     }
+// }
 
 /// The reactor is the main structure that will handle the connections and the events
 ///
