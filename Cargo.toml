@@ -1,0 +1,95 @@
+[package]
+name = "panduza-platform-core"
+edition = "2021"
+version = "0.2.3"
+readme = "README.md"
+
+# =========================================================
+[dependencies]
+
+# Panduza Rust Client
+panduza_rust = { path = "C:/Users/rodriguez.NET/Documents/workspace/50-PROJET/XX-XXXX-PZA/panduza-rust" }
+# Main async framework for the platform
+tokio = { version = "1.43.0", features = ["full", "tracing"] }
+# MQTT async client
+rumqttc = "0.24.0"
+# Async trait support
+async-trait = "0.1.86"
+# Futures support
+futures = "0.3.31"
+# Base for serde
+serde = { version = "1.0.217", features = ["derive"] }
+# Json serialization & deserialization
+serde_json = "1.0.138"
+# Regex management
+regex = "1.11.1"
+# Bytes array management
+bytes = "1.10.0"
+# Error management
+thiserror = "2.0.11"
+# 
+dirs = "6.0.0"
+# Bitflags
+bitflags = "2.8.0"
+# 
+chrono = "0.4.39"
+# 
+rand = "0.9.0"
+# 
+byteorder = "1.5.0"
+
+# === 
+# Trace instrumentation at disabled levels will be skipped and will not even be present
+# in the resulting binary unless the verbosity level is specified dynamically.
+# This level is configured separately for release and debug builds.
+tracing = { version = "0.1.41", features = [
+    "max_level_trace",
+    "release_max_level_debug",
+] }
+# 
+tracing-core = { version = "0.1.33" }
+# Fmt subscriber
+tracing-subscriber = "0.3.19"
+# 
+tracing-appender = "0.2.3"
+# To managed logs in colored format
+colored = "3.0.0"
+
+# === feature => usb
+#
+# Usb driver library
+# 
+nusb = "0.1.12"
+
+# === feature => serial
+# 
+# To manage serial communication
+# Better than 'tokio-serial' in particular on Windows
+#
+serial2-tokio = { version = "0.1.14", optional = true }
+# 
+# But the available_serial_ports() of tokio-serial is better
+# because it provides more detailed informations on hardware
+# This is the only reason why we use tokio-serial for now
+# 
+tokio-serial = { version = "5.4.5", optional = true }
+# 
+# To manage SLIP encoding/decoding
+# 
+serial-line-ip = { version = "0.5.0", optional = true }
+
+# =========================================================
+[features]
+
+# Build usb drivers
+# 
+usb = []
+
+# Build serial drivers
+# 
+serial = ["tokio-serial", "serial2-tokio", "serial-line-ip", "usb"]
+
+# Display perf mesurement on log info
+# Allow perf measurement when the code is built in release
+# 
+measure = []
