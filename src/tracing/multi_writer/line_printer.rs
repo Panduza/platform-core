@@ -94,6 +94,10 @@ pub fn print_log_line(buf: &[u8], enable_broker_log: bool, debug: bool, trace: b
         "Platform" => {
             write!(&mut log_message, "{}", "[P] ".to_string().red()).unwrap();
         }
+        "Service" => {
+            let f = format!("[P> {}] ", data[4],);
+            write!(&mut log_message, "{}", f.red()).unwrap();
+        }
         "Runtime" => {
             write!(&mut log_message, "{}", "[R] ".to_string().red()).unwrap();
         }
