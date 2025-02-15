@@ -210,10 +210,10 @@ macro_rules! plugin_interface {
             //     SCAN_MACHINE = Some(scan_machine);
             // }
 
-            // // if factory none
-            // // init factory
-            // let mut factory = Factory::new();
-            // factory.add_producers(plugin_producers());
+            // if factory none
+            // init factory
+            let mut factory = Factory::new();
+            factory.add_producers(plugin_producers());
             // unsafe {
             //     FACTORY_STORE = Some(factory.store_as_c_string().unwrap());
             //     FACTORY = Some(factory);
