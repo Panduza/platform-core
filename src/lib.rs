@@ -64,7 +64,7 @@ pub use factory::production_order::ProductionOrder;
 pub use factory::store::Product;
 pub use factory::store::Store;
 pub use factory::Factory;
-pub use factory::ScanMachine;
+// pub use factory::ScanMachine;
 
 ///
 ///
@@ -74,7 +74,8 @@ pub mod topic;
 pub use topic::Topic;
 
 //
-// pub mod instance;
+pub mod instance;
+pub use instance::actions::Actions;
 // pub use instance::class::Class;
 // pub use instance::class_builder::ClassBuilder;
 // pub use instance::container::Container;

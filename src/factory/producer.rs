@@ -1,4 +1,4 @@
-use crate::Error;
+use crate::{Actions, Error, Props};
 
 /// Trait to define a driver producer
 /// Its job is to produce instanciation of drivers
@@ -24,5 +24,5 @@ pub trait Producer: Send {
 
     /// Produce a new instance of the device actions
     ///
-    fn produce(&self) -> Result<Box<dyn DriverOperations>, Error>;
+    fn produce(&self) -> Result<Box<dyn Actions>, Error>;
 }

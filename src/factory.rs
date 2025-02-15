@@ -101,85 +101,85 @@ impl Factory {
             .map_err(|e| crate::Error::InternalLogic(format!("Failed to build CString ({:?})", e)))
     }
 
-    ///
-    /// production_order => json with ref, name, settings
-    ///
-    pub fn produce(
-        &self,
-        reactor: Engine,
-        r_notifier: Option<Sender<Notification>>,
-        production_order: ProductionOrder,
-    ) -> (InstanceMonitor, Instance) {
-        let producer = self.producers.get(production_order.dref()).unwrap();
-        let device_operations = producer.produce().unwrap();
+    // /
+    // / production_order => json with ref, name, settings
+    // /
+    // pub fn produce(
+    //     &self,
+    //     reactor: Engine,
+    //     r_notifier: Option<Sender<Notification>>,
+    //     production_order: ProductionOrder,
+    // ) -> (InstanceMonitor, Instance) {
+    //     let producer = self.producers.get(production_order.dref()).unwrap();
+    //     let device_operations = producer.produce().unwrap();
 
-        // Box<dyn DriverOperations>
+    //     // Box<dyn DriverOperations>
 
-        InstanceMonitor::new(
-            reactor.clone(),
-            r_notifier,
-            device_operations,
-            production_order,
-        )
-    }
+    //     InstanceMonitor::new(
+    //         reactor.clone(),
+    //         r_notifier,
+    //         device_operations,
+    //         production_order,
+    //     )
+    // }
 }
 
-///
-///
-pub struct ScanMachine {
-    /// Local logger
-    logger: Logger,
-    ///
-    scanners: Vec<Box<dyn Scanner>>,
-}
-impl ScanMachine {
-    /// Create a new factory
-    ///
-    pub fn new() -> Self {
-        // New object
-        let obj = Self {
-            logger: Logger::new_for_factory(),
-            scanners: Vec::new(),
-        };
-        // Info log
-        obj.logger.info("# Scan Machine initialization");
-        // Load builtin device producers
-        return obj;
-    }
-    pub fn add_scanners(&mut self, scanners: Vec<Box<dyn Scanner>>) {
-        for scanner in scanners {
-            self.add_scanner(scanner);
-        }
-    }
+// ///
+// ///
+// pub struct ScanMachine {
+//     /// Local logger
+//     logger: Logger,
+//     ///
+//     scanners: Vec<Box<dyn Scanner>>,
+// }
+// impl ScanMachine {
+//     /// Create a new factory
+//     ///
+//     pub fn new() -> Self {
+//         // New object
+//         let obj = Self {
+//             logger: Logger::new_for_factory(),
+//             scanners: Vec::new(),
+//         };
+//         // Info log
+//         obj.logger.info("# Scan Machine initialization");
+//         // Load builtin device producers
+//         return obj;
+//     }
+//     pub fn add_scanners(&mut self, scanners: Vec<Box<dyn Scanner>>) {
+//         for scanner in scanners {
+//             self.add_scanner(scanner);
+//         }
+//     }
 
-    /// Add a single producer
-    pub fn add_scanner(&mut self, scanner: Box<dyn Scanner>) {
-        // Info log
-        self.logger
-            .info(format!("   - scanner - {}", scanner.name()));
+//     /// Add a single producer
+//     pub fn add_scanner(&mut self, scanner: Box<dyn Scanner>) {
+//         // Info log
+//         self.logger
+//             .info(format!("   - scanner - {}", scanner.name()));
 
-        self.scanners.push(scanner);
-    }
+//         self.scanners.push(scanner);
+//     }
 
-    ///
-    ///
-    ///
-    pub fn scan(&self) -> Vec<ProductionOrder> {
-        let mut result = Vec::new();
-        for scanner in &self.scanners {
-            result.extend(scanner.scan());
-        }
-        result
-    }
+//     ///
+//     ///
+//     ///
+//     pub fn scan(&self) -> Vec<ProductionOrder> {
+//         let mut result = Vec::new();
+//         for scanner in &self.scanners {
+//             result.extend(scanner.scan());
+//         }
+//         result
+//     }
 
-    ///
-    ///
-    ///
-    pub fn scan_as_c_string(&self) -> Result<CString, crate::Error> {
-        let result = self.scan();
-        let json_str =
-            serde_json::to_string(&result).expect("Failed to serialize scan result to JSON");
-        CString::new(json_str)
-            .map_err(|e| crate::Error::InternalLogic(format!("Failed to build CString ({:?})", e)))
-    }
-}
+//     ///
+//     ///
+//     ///
+//     pub fn scan_as_c_string(&self) -> Result<CString, crate::Error> {
+//         let result = self.scan();
+//         let json_str =
+//             serde_json::to_string(&result).expect("Failed to serialize scan result to JSON");
+//         CString::new(json_str)
+//             .map_err(|e| crate::Error::InternalLogic(format!("Failed to build CString ({:?})", e)))
+//     }
+// }
