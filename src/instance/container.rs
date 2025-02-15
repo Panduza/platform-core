@@ -1,6 +1,7 @@
-use crate::{AttributeBuilder, ClassBuilder, Logger, TaskResult};
+use super::class_builder::ClassBuilder;
+use crate::Logger;
 use async_trait::async_trait;
-use std::future::Future;
+use panduza::AttributeBuilder;
 
 #[async_trait]
 /// Common interface shared between Instance and Class
@@ -19,10 +20,4 @@ pub trait Container: Clone {
     /// Device can directly create some attribute on its root
     ///
     fn create_attribute<N: Into<String>>(&mut self, name: N) -> AttributeBuilder;
-
-    /// Spawn a new async task inside this instance
-    ///
-    async fn spawn<N: Send + Into<String>, F>(&mut self, name: N, future: F)
-    where
-        F: Future<Output = TaskResult> + Send + 'static;
 }

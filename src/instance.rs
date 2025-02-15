@@ -1,6 +1,7 @@
 // mod inner;
 
 pub mod actions;
+// pub mod container;
 // pub mod attribute;
 // pub mod class;
 // pub mod class_builder;
@@ -10,10 +11,11 @@ pub mod actions;
 
 // pub use container::Container;
 
-use crate::Logger;
 use crate::{engine::Engine, Error, InstanceSettings, TaskResult};
+use crate::{Actions, Logger};
 // use class_builder::ClassBuilder;
 use futures::FutureExt;
+use panduza::pubsub::PubSubOperator;
 // pub use inner::InstanceInner;
 use serde::{Deserialize, Serialize};
 use std::{fmt::Display, future::Future, sync::Arc};
@@ -59,42 +61,33 @@ impl Display for State {
 ///
 ///
 #[derive(Clone)]
-pub struct Instance {
+pub struct Instance<O: PubSubOperator> {
     /// Logger for instance
     ///
-    pub logger: Logger,
+    logger: Logger,
 
+    /// Manage communications
     ///
-    /// Manage all MQTT communications
-    ///
-    // reactor: Engine,
+    engine: Engine<O>,
 
-    // ///
-    // /// Device must share its status with the device "_" through this info object
-    // info_dyn_dev_status: Option<Arc<Mutex<InfoDynamicDeviceStatus>>>,
-    // pub r_notifier: Option<Sender<Notification>>,
-
-    // started: bool,
-    /// Inner object
-    // inner: Arc<Mutex<InstanceInner>>,
-
-    /// Operations of the devices
-    ///
-    // inner_operations: Arc<Mutex<Box<dyn DriverOperations>>>,
-
+    /// Root topic of the instance
     ///
     topic: String,
 
-    // platform_services: crate::platform::services::AmServices,
-    // // logger: Logger,
+    /// Operations of the devices
+    ///
+    actions: Arc<Mutex<Box<dyn Actions<O>>>>,
+
+    /// State of the instance
+    ///
     state: Arc<Mutex<State>>,
+
+    /// Notifier for state change
+    ///
     state_change_notifier: Arc<Notify>,
-    //
-    //
-    // spawner: TaskSender<Result<(), Error>>,
 }
 
-impl Instance {
+impl<O: PubSubOperator> Instance<O> {
     //
     // reactor
 
