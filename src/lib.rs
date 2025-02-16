@@ -47,6 +47,7 @@ pub use panduza::TaskMonitor;
 /// The engine is the core object that will handle the connections and the events
 ///
 mod engine;
+pub use engine::new_engine;
 pub use engine::options::EngineOptions;
 pub use engine::Engine;
 
@@ -75,7 +76,11 @@ pub use instance::Instance;
 
 ///
 ///
-// pub mod pmacro;
+pub mod runtime;
+pub use runtime::Runtime;
+
+///
+///
 pub mod topic;
 pub use topic::Topic;
 
@@ -120,9 +125,6 @@ pub use topic::Topic;
 
 /// Return type for spawned task
 pub type TaskResult = Result<(), Error>;
-
-// pub mod runtime;
-// pub use runtime::Runtime;
 
 pub mod env;
 

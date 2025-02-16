@@ -1,27 +1,24 @@
 #[macro_export]
 macro_rules! plugin_interface {
     ($plg_name:literal, $plg_version:literal) => {
-        // use panduza_platform_core::NotificationGroup;
+        use panduza_platform_core::new_engine;
+        use panduza_platform_core::Engine;
+        use panduza_platform_core::EngineOptions;
         use panduza_platform_core::Factory;
         use panduza_platform_core::Logger;
         use panduza_platform_core::Plugin;
         use panduza_platform_core::ProductionOrder;
-        // use panduza_platform_core::{Reactor, ReactorSettings, Runtime, ScanMachine};
-        // use serde_json::Result;
-        // use serde_json::Value;
+        use panduza_platform_core::Runtime;
         use std::ffi::c_char;
         use std::ffi::CString;
-        // use std::{
-        //     sync::{Arc, Mutex},
-        //     thread::{self, JoinHandle},
-        //     time::Duration,
-        // };
-        // use tokio::time::sleep;
+        use std::thread;
+        use std::thread::JoinHandle;
+        use std::time::Duration;
+        use tokio::time::sleep;
 
-        ///
         /// True when the runtime has been initialized
         ///
-        // static mut RUNTIME_STARTED: bool = false;
+        static mut RUNTIME_STARTED: bool = false;
 
         /// Logger of the plugin
         ///
@@ -45,6 +42,14 @@ macro_rules! plugin_interface {
 
         ///
         ///
+        static mut THREAD_HANDLE: Option<JoinHandle<()>> = None;
+
+        /// Production Order Sender
+        ///
+        static mut POS: Option<tokio::sync::mpsc::Sender<ProductionOrder>> = None;
+
+        ///
+        ///
         ///
         // static mut RUNTIME_NOTIFICATIONS_GROUP: Option<Arc<std::sync::Mutex<NotificationGroup>>> =
         //     None;
@@ -53,63 +58,60 @@ macro_rules! plugin_interface {
 
         // static mut FACTORY_SCAN_RESULT: Option<CString> = None;
 
-        // static mut THREAD_HANDLE: Option<JoinHandle<()>> = None;
-
-        // static mut POS: Option<tokio::sync::mpsc::Sender<ProductionOrder>> = None;
-
         ///
         /// Main Entry Point for the plugin runtime
         ///
-        // #[tokio::main]
-        // async fn start_async_runtime(runtime: Runtime) {
-        //     runtime.task().await.unwrap();
-        // }
+        #[tokio::main]
+        async fn start_async_runtime(runtime: Runtime) {
+            runtime.task().await.unwrap();
+        }
 
         ///
         /// Start the runtime
         ///
         unsafe fn start_runtime() {
-            // //
-            // // Already started
-            // if RUNTIME_STARTED {
-            //     return;
-            // }
+            //
+            // Already started
+            if RUNTIME_STARTED {
+                return;
+            }
 
-            // //
-            // // Build factory
-            // let factory = FACTORY.take();
+            //
+            // Build factory
+            let factory = FACTORY.take();
 
-            // //
-            // let settings = ReactorSettings::new("localhost", 1883, None);
-            // let mut reactor = Reactor::new(settings);
+            //
+            //
+            let engine_options = EngineOptions::default();
+            let mut engine = new_engine(engine_options).unwrap();
 
-            // //
-            // //
-            // let mut runtime = Runtime::new(factory.unwrap(), reactor);
-            // runtime.set_plugin($plg_name);
+            //
+            //
+            let (mut runtime, runtime_prod_order) = Runtime::new(factory.unwrap(), engine);
+            runtime.set_plugin($plg_name);
             // RUNTIME_NOTIFICATIONS_GROUP = Some(runtime.clone_notifications());
 
-            // //
-            // //
-            // POS = Some(runtime.clone_production_order_sender());
+            //
+            //
+            POS = Some(runtime_prod_order);
 
-            // //
-            // // Start thread
-            // let __handle: JoinHandle<()> = thread::spawn(move || {
-            //     start_async_runtime(runtime);
-            // });
-            // THREAD_HANDLE = Some(__handle);
+            //
+            // Start thread
+            let __handle: JoinHandle<()> = thread::spawn(move || {
+                start_async_runtime(runtime);
+            });
+            THREAD_HANDLE = Some(__handle);
 
-            // //
-            // // Set flag
-            // RUNTIME_STARTED = true;
+            //
+            // Set flag
+            RUNTIME_STARTED = true;
         }
 
         ///
         /// Plugin management only, join the worker thread in platform
         ///
         pub unsafe extern "C" fn join() {
-            // THREAD_HANDLE.take().unwrap().join().unwrap();
+            THREAD_HANDLE.take().unwrap().join().unwrap();
         }
 
         ///
@@ -144,14 +146,16 @@ macro_rules! plugin_interface {
         /// Produce a new driver instance
         ///
         pub unsafe extern "C" fn produce(str_production_order: *const c_char) -> u32 {
-            // LOGGER.as_ref().unwrap().trace("produce");
+            LOGGER.as_ref().unwrap().trace("produce");
 
-            // //
-            // // Start runtime if not already
-            // start_runtime();
+            //
+            // Start runtime if not already
+            start_runtime();
 
-            // let po = ProductionOrder::from_c_str_ptr(str_production_order).unwrap();
-            // POS.as_mut().unwrap().try_send(po).unwrap();
+            //
+            //
+            let po = ProductionOrder::from_c_str_ptr(str_production_order).unwrap();
+            POS.as_mut().unwrap().try_send(po).unwrap();
 
             // Success
             0
@@ -223,9 +227,9 @@ macro_rules! plugin_interface {
                 FACTORY = Some(factory);
             }
 
-            // //
-            // // Start runtime
-            // start_runtime();
+            //
+            // Start runtime
+            start_runtime();
 
             //
             // Build the plugin object

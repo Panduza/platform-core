@@ -105,7 +105,7 @@ impl Engine {
 
 /// Create and Start the engine
 ///
-pub async fn new_engine(options: EngineOptions) -> Result<Engine, String> {
+pub fn new_engine(options: EngineOptions) -> Result<Engine, String> {
     //
     // Create MQTT router
     let router =
@@ -113,7 +113,7 @@ pub async fn new_engine(options: EngineOptions) -> Result<Engine, String> {
 
     //
     // Start the router and keep the operation handler
-    let router_handler = router.start(None).await.unwrap();
+    let router_handler = router.start(None).unwrap();
 
     //
     // Finalize the engine
