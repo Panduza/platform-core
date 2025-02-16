@@ -108,8 +108,7 @@ impl Engine {
 pub fn new_engine(options: EngineOptions) -> Result<Engine, String> {
     //
     // Create MQTT router
-    let router =
-        panduza::router::new_mqtt_router(options.pubsub_options).map_err(|e| e.to_string())?;
+    let router = panduza::router::new_router(options.pubsub_options).map_err(|e| e.to_string())?;
 
     //
     // Start the router and keep the operation handler
