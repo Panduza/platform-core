@@ -1,7 +1,7 @@
 pub mod options;
 use options::EngineOptions;
 
-use panduza::router::RouterHandler;
+use panduza::router::{Router, RouterHandler};
 
 // #[async_trait]
 // impl MessageHandler for PzaScanMessageHandler {
@@ -117,4 +117,38 @@ pub fn new_engine(options: EngineOptions) -> Result<Engine, String> {
     //
     // Finalize the engine
     Ok(Engine::new(router_handler))
+}
+
+/// The goal of this object is to provide a tmp object that
+/// does not use tokio:spawn, to be able to prepare the context.
+/// Before starting a tokio context.
+///
+pub struct EngineBuilder {
+    // options: EngineOptions,
+    router: Router,
+}
+
+impl EngineBuilder {
+    /// Create and Start the engine
+    ///
+    pub fn new(options: EngineOptions) -> Self {
+        //
+        // Create router
+        let router = panduza::router::new_router(options.pubsub_options)
+            .map_err(|e| e.to_string())
+            .unwrap();
+
+        Self {
+            // options: options,
+            router: router,
+        }
+    }
+
+    pub fn build(self) -> Engine {
+        let router_handler = self.router.start(None).unwrap();
+
+        //
+        // Finalize the engine
+        Engine::new(router_handler)
+    }
 }

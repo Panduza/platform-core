@@ -3,12 +3,14 @@ macro_rules! plugin_interface {
     ($plg_name:literal, $plg_version:literal) => {
         use panduza_platform_core::new_engine;
         use panduza_platform_core::Engine;
+        use panduza_platform_core::EngineBuilder;
         use panduza_platform_core::EngineOptions;
         use panduza_platform_core::Factory;
         use panduza_platform_core::Logger;
         use panduza_platform_core::Plugin;
         use panduza_platform_core::ProductionOrder;
         use panduza_platform_core::Runtime;
+        use panduza_platform_core::RuntimeBuilder;
         use std::ffi::c_char;
         use std::ffi::CString;
         use std::thread;
@@ -62,8 +64,8 @@ macro_rules! plugin_interface {
         /// Main Entry Point for the plugin runtime
         ///
         #[tokio::main]
-        async fn start_async_runtime(runtime: Runtime) {
-            runtime.task().await.unwrap();
+        async fn start_async_runtime(runtime_builder: RuntimeBuilder) {
+            runtime_builder.start().task().await.unwrap();
         }
 
         ///
@@ -83,12 +85,14 @@ macro_rules! plugin_interface {
             //
             //
             let engine_options = EngineOptions::default();
-            let mut engine = new_engine(engine_options).unwrap();
+            // let mut engine = new_engine(engine_options).unwrap();
+            let engine_builder = EngineBuilder::new(engine_options);
 
             //
             //
-            let (mut runtime, runtime_prod_order) = Runtime::new(factory.unwrap(), engine);
-            runtime.set_plugin($plg_name);
+            let (mut runtime_builder, runtime_prod_order) =
+                RuntimeBuilder::new(factory.unwrap(), engine_builder);
+            // runtime.set_plugin($plg_name);
             // RUNTIME_NOTIFICATIONS_GROUP = Some(runtime.clone_notifications());
 
             //
@@ -98,7 +102,7 @@ macro_rules! plugin_interface {
             //
             // Start thread
             let __handle: JoinHandle<()> = thread::spawn(move || {
-                start_async_runtime(runtime);
+                start_async_runtime(runtime_builder);
             });
             THREAD_HANDLE = Some(__handle);
 

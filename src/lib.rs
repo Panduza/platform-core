@@ -50,6 +50,7 @@ mod engine;
 pub use engine::new_engine;
 pub use engine::options::EngineOptions;
 pub use engine::Engine;
+pub use engine::EngineBuilder;
 
 /// Plugin object
 ///
@@ -78,6 +79,7 @@ pub use instance::Instance;
 ///
 pub mod runtime;
 pub use runtime::Runtime;
+pub use runtime::RuntimeBuilder;
 
 ///
 ///

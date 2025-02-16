@@ -1,4 +1,5 @@
 pub mod notification;
+use crate::engine::EngineBuilder;
 use crate::{Engine, ProductionOrder, TaskResult};
 use crate::{Factory, Logger};
 use panduza::pubsub::Operator;
@@ -63,27 +64,24 @@ pub struct Runtime {
 impl Runtime {
     /// Constructor
     ///
-    pub fn new(factory: Factory, engine: Engine) -> (Self, Sender<ProductionOrder>) {
+    pub fn new(factory: Factory, engine: Engine, po_receiver: Receiver<ProductionOrder>) -> Self {
         // let (t_tx, t_rx) = create_task_channel::<TaskResult>(TASK_CHANNEL_SIZE);
-        let (po_tx, po_rx) = channel::<ProductionOrder>(PROD_ORDER_CHANNEL_SIZE);
+        // let (po_tx, po_rx) = channel::<ProductionOrder>(PROD_ORDER_CHANNEL_SIZE);
         // let (not_tx, not_rx) = channel::<Notification>(NOTIFICATION_CHANNEL_SIZE);
 
-        (
-            Self {
-                logger: Logger::new_for_runtime(),
-                factory: factory,
-                engine: engine,
-                keep_alive: Arc::new(AtomicBool::new(true)),
-                must_stop: Arc::new(AtomicBool::new(false)),
+        Self {
+            logger: Logger::new_for_runtime(),
+            factory: factory,
+            engine: engine,
+            keep_alive: Arc::new(AtomicBool::new(true)),
+            must_stop: Arc::new(AtomicBool::new(false)),
 
-                // new_task_notifier: Arc::new(Notify::new()),
-                production_order_receiver: Some(po_rx),
-                // notifications: Arc::new(std::sync::Mutex::new(NotificationGroup::new())),
-                // notification_sender: not_tx.clone(),
-                // notification_receiver: Some(not_rx),
-            },
-            po_tx,
-        )
+            // new_task_notifier: Arc::new(Notify::new()),
+            production_order_receiver: Some(po_receiver),
+            // notifications: Arc::new(std::sync::Mutex::new(NotificationGroup::new())),
+            // notification_sender: not_tx.clone(),
+            // notification_receiver: Some(not_rx),
+        }
     }
 
     /// Set the plugin name inside the logger
@@ -236,5 +234,34 @@ impl Runtime {
         //
         // Return ok
         Ok(())
+    }
+}
+
+pub struct RuntimeBuilder {
+    ///
+    ///
+    factory: Factory,
+    pub engine_builder: EngineBuilder,
+    pub po_receiver: Receiver<ProductionOrder>,
+}
+
+impl RuntimeBuilder {
+    pub fn new(factory: Factory, engine_builder: EngineBuilder) -> (Self, Sender<ProductionOrder>) {
+        let (po_tx, po_rx) = channel::<ProductionOrder>(PROD_ORDER_CHANNEL_SIZE);
+
+        (
+            Self {
+                factory: factory,
+                engine_builder: engine_builder,
+                po_receiver: po_rx,
+            },
+            po_tx,
+        )
+    }
+
+    pub fn start(self) -> Runtime {
+        let rr = self.engine_builder.build();
+
+        Runtime::new(self.factory, rr, self.po_receiver)
     }
 }
