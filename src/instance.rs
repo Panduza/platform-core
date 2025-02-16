@@ -2,13 +2,14 @@
 
 pub mod actions;
 pub mod attribute;
+pub mod attribute_builder;
 pub mod class;
 pub mod class_builder;
 pub mod container;
 // pub mod element;
 // pub mod monitor;
 
-use attribute::builder::AttributeServerBuilder;
+use attribute_builder::AttributeServerBuilder;
 use class_builder::ClassBuilder;
 pub use container::Container;
 

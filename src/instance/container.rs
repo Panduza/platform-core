@@ -1,4 +1,4 @@
-use super::{attribute::builder::AttributeServerBuilder, class_builder::ClassBuilder};
+use super::{attribute_builder::AttributeServerBuilder, class_builder::ClassBuilder};
 use crate::Logger;
 use async_trait::async_trait;
 

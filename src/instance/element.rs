@@ -1,9 +1,9 @@
-use crate::{BooleanAttServer, Class, Error, JsonAttServer};
+use crate::{BooleanAttributeServer, Class, Error, JsonAttServer};
 
 #[derive(Clone)]
 pub enum Element {
     Class(Class),
-    AsBoolean(BooleanAttServer),
+    AsBoolean(BooleanAttributeServer),
     AsJson(JsonAttServer),
 }
 

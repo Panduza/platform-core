@@ -95,7 +95,7 @@ pub use topic::Topic;
 
 //
 // pub use instance::attribute::builder::AttributeServerBuilder;
-// pub use instance::attribute::server_boolean::BooleanAttServer;
+// pub use instance::attribute::server_boolean::BooleanAttributeServer;
 // pub use instance::attribute::server_enum::EnumAttServer;
 // pub use instance::attribute::server_json::JsonAttServer;
 // pub use instance::attribute::server_mem_cmd::MemoryCommandAttServer;

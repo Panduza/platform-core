@@ -1,6 +1,6 @@
 use crate::{
     log_debug, log_debug_mount_end, log_debug_mount_start, log_trace, spawn_loop, spawn_on_command,
-    BooleanAttServer, Container, Error, SiAttServer,
+    BooleanAttributeServer, Container, Error, SiAttServer,
 };
 use async_trait::async_trait;
 use std::{sync::Arc, time::Duration};
@@ -116,7 +116,7 @@ pub async fn mount<C: Container, T: Triggerable + 'static>(
 /// On command callback
 ///
 async fn on_single_command<T: Triggerable + 'static>(
-    mut att_single: BooleanAttServer,
+    mut att_single: BooleanAttributeServer,
     triggered: Arc<Mutex<T>>,
 ) -> Result<(), Error> {
     while let Some(command) = att_single.pop_cmd().await {

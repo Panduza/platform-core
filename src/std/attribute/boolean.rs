@@ -1,6 +1,6 @@
 use crate::Error;
 use crate::{
-    log_debug, log_debug_mount_end, log_debug_mount_start, spawn_on_command, BooleanAttServer,
+    log_debug, log_debug_mount_end, log_debug_mount_start, spawn_on_command, BooleanAttributeServer,
     Container,
 };
 use async_trait::async_trait;
@@ -71,7 +71,7 @@ pub async fn mount<
 ///
 ///
 async fn on_command<I: BooleanAccessorModel + 'static>(
-    mut att: BooleanAttServer,
+    mut att: BooleanAttributeServer,
     interface: Arc<Mutex<I>>,
     index: usize,
 ) -> Result<(), Error> {

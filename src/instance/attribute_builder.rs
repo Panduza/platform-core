@@ -1,9 +1,12 @@
 use crate::instance::class::Class;
+use crate::runtime::notification::attribute::AttributeMode;
 use crate::Error;
 use serde_json::json;
 use std::sync::Weak;
 use tokio::sync::mpsc::Sender;
 use tokio::sync::Mutex;
+
+use super::attribute::server_boolean::BooleanAttributeServer;
 
 #[derive(Clone)]
 ///
@@ -31,7 +34,7 @@ pub struct AttributeServerBuilder {
     ///
     pub settings: Option<serde_json::Value>,
 
-    // pub mode: Option<AttributeMode>,
+    pub mode: Option<AttributeMode>,
     pub r#type: Option<String>,
 
     pub info: Option<String>,
@@ -52,7 +55,7 @@ impl AttributeServerBuilder {
             // r_notifier,
             topic: None,
             settings: None,
-            // mode: None,
+            mode: None,
             r#type: None,
             info: None,
         }
@@ -71,28 +74,49 @@ impl AttributeServerBuilder {
         self
     }
 
-    // /// Set the Read Only mode to this attribute
-    // ///
-    // pub fn with_ro(mut self) -> Self {
-    //     self.mode = Some(AttributeMode::ReadOnly);
-    //     self
-    // }
-    // /// Set the Write Only mode to this attribute
-    // ///
-    // pub fn with_wo(mut self) -> Self {
-    //     self.mode = Some(AttributeMode::WriteOnly);
-    //     self
-    // }
-    // /// Set the Write Read mode to this attribute
-    // ///
-    // pub fn with_rw(mut self) -> Self {
-    //     self.mode = Some(AttributeMode::ReadWrite);
-    //     self
-    // }
+    /// Set the Read Only mode to this attribute
+    ///
+    pub fn with_ro(mut self) -> Self {
+        self.mode = Some(AttributeMode::ReadOnly);
+        self
+    }
 
+    /// Set the Write Only mode to this attribute
+    ///
+    pub fn with_wo(mut self) -> Self {
+        self.mode = Some(AttributeMode::WriteOnly);
+        self
+    }
+
+    /// Set the Write Read mode to this attribute
+    ///
+    pub fn with_rw(mut self) -> Self {
+        self.mode = Some(AttributeMode::ReadWrite);
+        self
+    }
+
+    ///
+    ///
     pub fn with_info<T: Into<String>>(mut self, info: T) -> Self {
         self.info = Some(info.into());
         self
+    }
+
+    /// Finish attribute building and configure it with 'boolean' type.
+    ///
+    pub async fn finish_as_boolean(mut self) -> Result<BooleanAttributeServer, Error> {
+        self.r#type = Some(BooleanAttributeServer::r#type());
+        let att = BooleanAttributeServer::new(self.clone());
+        // att.inner.lock().await.init(att.inner.clone()).await?;
+        // self.send_creation_notification();
+
+        // //
+        // // Attach the attribute to its parent class if exist
+        // if let Some(mut parent_class) = self.parent_class {
+        //     parent_class.push_sub_element(att.clone_as_element()).await;
+        // }
+
+        Ok(att)
     }
 
     // ///
@@ -118,24 +142,6 @@ impl AttributeServerBuilder {
     //     let att = SiAttServer::new(self.clone(), unit_string, min, max, decimals);
     //     att.inner.lock().await.init(att.inner.clone()).await?;
     //     self.send_creation_notification();
-    //     Ok(att)
-    // }
-
-    // ///
-    // /// Finish attribute building and configure it with 'boolean' type.
-    // ///
-    // pub async fn finish_as_boolean(mut self) -> Result<BooleanAttServer, Error> {
-    //     self.r#type = Some(BooleanAttServer::r#type());
-    //     let att = BooleanAttServer::new(self.clone());
-    //     att.inner.lock().await.init(att.inner.clone()).await?;
-    //     self.send_creation_notification();
-
-    //     //
-    //     // Attach the attribute to its parent class if exist
-    //     if let Some(mut parent_class) = self.parent_class {
-    //         parent_class.push_sub_element(att.clone_as_element()).await;
-    //     }
-
     //     Ok(att)
     // }
 
