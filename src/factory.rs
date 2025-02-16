@@ -1,5 +1,5 @@
 pub mod producer;
-use panduza::pubsub::PubSubOperator;
+use panduza::pubsub::Operator;
 pub use producer::Producer;
 
 pub mod production_order;
@@ -12,14 +12,14 @@ use std::{collections::HashMap, ffi::CString};
 
 /// Factory to create devices from a configuration json
 ///
-pub struct Factory<O: PubSubOperator> {
+pub struct Factory {
     /// Local logger
     logger: Logger,
     /// List of known producers
-    producers: HashMap<String, Box<dyn Producer<O>>>,
+    producers: HashMap<String, Box<dyn Producer>>,
 }
 
-impl<O: PubSubOperator> Factory<O> {
+impl Factory {
     /// Create a new factory
     ///
     pub fn new() -> Self {
@@ -36,14 +36,14 @@ impl<O: PubSubOperator> Factory<O> {
 
     /// Add multiple producers
     ///
-    pub fn add_producers(&mut self, producers: Vec<Box<dyn Producer<O>>>) {
+    pub fn add_producers(&mut self, producers: Vec<Box<dyn Producer>>) {
         for producer in producers {
             self.add_producer(producer);
         }
     }
 
     /// Add a single producer
-    pub fn add_producer(&mut self, producer: Box<dyn Producer<O>>) {
+    pub fn add_producer(&mut self, producer: Box<dyn Producer>) {
         // Info log
         self.logger.info(format!(
             "   - producer - {}.{}",

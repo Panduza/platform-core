@@ -1,4 +1,4 @@
-use panduza::PubSubOptions;
+use panduza::pubsub;
 
 #[derive(Default, Debug)]
 /// Options of the platform engine
@@ -6,5 +6,5 @@ use panduza::PubSubOptions;
 pub struct EngineOptions {
     /// Options for the pub sub connection
     ///
-    pub pubsub_options: PubSubOptions,
+    pub pubsub_options: pubsub::Options,
 }

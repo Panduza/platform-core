@@ -1,10 +1,9 @@
 use crate::{Actions, Error, Props};
-use panduza::pubsub::PubSubOperator;
 
 /// Trait to define an instance producer
 /// Its job is to produce an instance of a driver
 ///
-pub trait Producer<O: PubSubOperator>: Send {
+pub trait Producer: Send {
     /// Driver Manufacturer
     ///
     fn manufacturer(&self) -> String;
@@ -25,5 +24,5 @@ pub trait Producer<O: PubSubOperator>: Send {
 
     /// Produce a new instance of the device actions
     ///
-    fn produce(&self) -> Result<Box<dyn Actions<O>>, Error>;
+    fn produce(&self) -> Result<Box<dyn Actions>, Error>;
 }

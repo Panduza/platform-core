@@ -1,7 +1,7 @@
 pub mod options;
 use options::EngineOptions;
 
-use panduza::pubsub::PubSubOperator;
+use panduza::pubsub::Operator;
 use panduza::router::RouterHandler;
 
 // #[async_trait]
@@ -32,20 +32,20 @@ use panduza::router::RouterHandler;
 /// All the attribute and objects will be powered by the engine
 ///
 #[derive(Clone)]
-pub struct Engine<O: PubSubOperator> {
+pub struct Engine {
     /// Engine works on router objects
     ///
-    router: RouterHandler<O>,
+    router: RouterHandler,
 }
 
-impl<O: PubSubOperator> Engine<O> {
+impl Engine {
     /// Create a new Reactor
     ///
     /// # Arguments
     ///
     /// * `core` - The core of the reactor
     ///
-    pub fn new(router: RouterHandler<O>) -> Self {
+    pub fn new(router: RouterHandler) -> Self {
         // let data = ;
 
         // Server hostname
@@ -119,7 +119,7 @@ impl<O: PubSubOperator> Engine<O> {
 
 /// Create and Start the engine
 ///
-pub async fn new_engine(options: EngineOptions) -> Result<Engine<impl PubSubOperator>, String> {
+pub async fn new_engine(options: EngineOptions) -> Result<Engine, String> {
     //
     // Create MQTT router
     let router =

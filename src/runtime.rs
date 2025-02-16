@@ -30,7 +30,7 @@ static NOTIFICATION_CHANNEL_SIZE: usize = 512;
 
 /// Manage the execution instances
 ///
-pub struct Runtime<O: PubSubOperator> {
+pub struct Runtime {
     ///
     /// Logger dedicated to runtime activity
     ///
@@ -70,7 +70,7 @@ pub struct Runtime<O: PubSubOperator> {
     notification_receiver: Option<Receiver<Notification>>,
 }
 
-impl<O: PubSubOperator> Runtime<O> {
+impl Runtime<O> {
     ///
     /// Constructor
     ///

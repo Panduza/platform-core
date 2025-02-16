@@ -1,21 +1,20 @@
 // mod inner;
 
 pub mod actions;
-// pub mod container;
 // pub mod attribute;
-// pub mod class;
-// pub mod class_builder;
-// pub mod container;
+pub mod class;
+pub mod class_builder;
+pub mod container;
 // pub mod element;
 // pub mod monitor;
 
-// pub use container::Container;
+pub use container::Container;
 
 use crate::{engine::Engine, Error, InstanceSettings, TaskResult};
 use crate::{Actions, Logger};
 // use class_builder::ClassBuilder;
 use futures::FutureExt;
-use panduza::pubsub::PubSubOperator;
+use panduza::pubsub::Operator;
 // pub use inner::InstanceInner;
 use serde::{Deserialize, Serialize};
 use std::{fmt::Display, future::Future, sync::Arc};
@@ -61,14 +60,14 @@ impl Display for State {
 ///
 ///
 #[derive(Clone)]
-pub struct Instance<O: PubSubOperator> {
+pub struct Instance {
     /// Logger for instance
     ///
     logger: Logger,
 
     /// Manage communications
     ///
-    engine: Engine<O>,
+    engine: Engine,
 
     /// Root topic of the instance
     ///
@@ -76,7 +75,7 @@ pub struct Instance<O: PubSubOperator> {
 
     /// Operations of the devices
     ///
-    actions: Arc<Mutex<Box<dyn Actions<O>>>>,
+    actions: Arc<Mutex<Box<dyn Actions>>>,
 
     /// State of the instance
     ///
@@ -87,7 +86,7 @@ pub struct Instance<O: PubSubOperator> {
     state_change_notifier: Arc<Notify>,
 }
 
-impl<O: PubSubOperator> Instance<O> {
+impl Instance {
     //
     // reactor
 
