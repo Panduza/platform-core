@@ -3,8 +3,8 @@ use tokio::sync::Mutex;
 
 use super::server::AttServer;
 use crate::{
-    generic_att_server_methods, instance::element::Element, AttributeBuilder, Error, JsonCodec,
-    Logger,
+    generic_att_server_methods, instance::element::Element, AttributeServerBuilder, Error,
+    JsonCodec, Logger,
 };
 
 ///
@@ -41,7 +41,7 @@ impl JsonAttServer {
     ///
     ///
     ///
-    pub fn new(builder: AttributeBuilder) -> Self {
+    pub fn new(builder: AttributeServerBuilder) -> Self {
         let obj = AttServer::<JsonCodec>::from(builder);
         Self {
             logger: obj.logger.clone(),

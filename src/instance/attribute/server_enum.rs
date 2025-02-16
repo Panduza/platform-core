@@ -1,5 +1,5 @@
 use super::server::AttServer;
-use crate::{generic_att_server_methods, AttributeBuilder, Error, Logger, StringCodec};
+use crate::{generic_att_server_methods, AttributeServerBuilder, Error, Logger, StringCodec};
 
 use std::{future::Future, sync::Arc};
 use tokio::sync::Mutex;
@@ -38,7 +38,7 @@ impl EnumAttServer {
     ///
     ///
     ///
-    pub fn new(builder: AttributeBuilder, choices: Vec<String>) -> Self {
+    pub fn new(builder: AttributeServerBuilder, choices: Vec<String>) -> Self {
         let obj = AttServer::<StringCodec>::from(builder);
         Self {
             logger: obj.logger.clone(),

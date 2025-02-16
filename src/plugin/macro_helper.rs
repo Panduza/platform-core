@@ -35,17 +35,21 @@ macro_rules! plugin_interface {
         ///
         static mut PLG_VERSION: Option<CString> = None;
 
+        /// Object of the local factory
+        ///
+        static mut FACTORY: Option<Factory> = None;
+
+        /// Factory store string (capabilties of the local factory)
+        ///
+        static mut FACTORY_STORE: Option<CString> = None;
+
         ///
         ///
         ///
         // static mut RUNTIME_NOTIFICATIONS_GROUP: Option<Arc<std::sync::Mutex<NotificationGroup>>> =
         //     None;
 
-        // static mut FACTORY: Option<Factory> = None;
-
         // static mut SCAN_MACHINE: Option<ScanMachine> = None;
-
-        // static mut FACTORY_STORE: Option<CString> = None;
 
         // static mut FACTORY_SCAN_RESULT: Option<CString> = None;
 
@@ -112,9 +116,9 @@ macro_rules! plugin_interface {
         /// Return the list of driver that can be produced
         ///
         pub unsafe extern "C" fn store() -> *const c_char {
-            // LOGGER.as_ref().unwrap().trace(format!("store !"));
-            // FACTORY_STORE.as_ref().unwrap().as_c_str().as_ptr()
-            return std::ptr::null();
+            LOGGER.as_ref().unwrap().trace(format!("store !"));
+            FACTORY_STORE.as_ref().unwrap().as_c_str().as_ptr()
+            // return std::ptr::null();
         }
 
         ///
@@ -214,10 +218,10 @@ macro_rules! plugin_interface {
             // init factory
             let mut factory = Factory::new();
             factory.add_producers(plugin_producers());
-            // unsafe {
-            //     FACTORY_STORE = Some(factory.store_as_c_string().unwrap());
-            //     FACTORY = Some(factory);
-            // }
+            unsafe {
+                FACTORY_STORE = Some(factory.store_as_c_string().unwrap());
+                FACTORY = Some(factory);
+            }
 
             // //
             // // Start runtime

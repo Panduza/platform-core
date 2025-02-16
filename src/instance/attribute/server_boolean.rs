@@ -1,7 +1,7 @@
 use super::server::AttServer;
 
 use crate::{
-    generic_att_server_methods, instance::element::Element, AttributeBuilder, BooleanCodec, Error,
+    generic_att_server_methods, instance::element::Element, AttributeServerBuilder, BooleanCodec, Error,
     Logger,
 };
 
@@ -41,7 +41,7 @@ impl BooleanAttServer {
 
     ///
     ///
-    pub fn new(builder: AttributeBuilder) -> Self {
+    pub fn new(builder: AttributeServerBuilder) -> Self {
         let obj = AttServer::<BooleanCodec>::from(builder);
         Self {
             logger: obj.logger.clone(),

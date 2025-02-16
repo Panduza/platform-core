@@ -3,7 +3,7 @@ use crate::runtime::notification::attribute::AttributeMode;
 use crate::runtime::notification::EnablementNotification;
 use crate::tracing::Logger;
 use crate::AlertNotification;
-use crate::AttributeBuilder;
+use crate::AttributeServerBuilder;
 use crate::Error;
 use crate::MessageCodec;
 use crate::MessageHandler;
@@ -243,8 +243,8 @@ impl<TYPE: MessageCodec> MessageHandler for AttServer<TYPE> {
 ///
 /// Allow creation from the builder
 ///
-impl<TYPE: MessageCodec> From<AttributeBuilder> for AttServer<TYPE> {
-    fn from(builder: AttributeBuilder) -> Self {
+impl<TYPE: MessageCodec> From<AttributeServerBuilder> for AttServer<TYPE> {
+    fn from(builder: AttributeServerBuilder) -> Self {
         let topic = builder.topic.as_ref().unwrap().clone();
         Self {
             logger: Logger::new_for_attribute_from_topic(topic.clone()),

@@ -1,27 +1,26 @@
 // mod inner;
 
 pub mod actions;
-// pub mod attribute;
+pub mod attribute;
 pub mod class;
 pub mod class_builder;
 pub mod container;
 // pub mod element;
 // pub mod monitor;
 
+use attribute::builder::AttributeServerBuilder;
+use class_builder::ClassBuilder;
 pub use container::Container;
 
 use crate::{engine::Engine, Error, InstanceSettings, TaskResult};
 use crate::{Actions, Logger};
 // use class_builder::ClassBuilder;
-use futures::FutureExt;
-use panduza::pubsub::Operator;
-// pub use inner::InstanceInner;
+
 use serde::{Deserialize, Serialize};
 use std::{fmt::Display, future::Future, sync::Arc};
 use tokio::sync::Mutex;
 use tokio::sync::{mpsc::Sender, Notify};
 
-use crate::log_error;
 use async_trait::async_trait;
 
 /// States of the main Interface FSM
@@ -251,40 +250,31 @@ impl Instance {
     }
 }
 
-// #[async_trait]
-// impl Container for Instance {
-//     /// Get for the container logger
-//     ///
-//     fn logger(&self) -> &Logger {
-//         &self.logger
-//     }
+#[async_trait]
+impl Container for Instance {
+    /// Get for the container logger
+    ///
+    fn logger(&self) -> &Logger {
+        &self.logger
+    }
 
-//     /// Override
-//     ///
-//     fn create_class<N: Into<String>>(&mut self, name: N) -> ClassBuilder {
-//         ClassBuilder::new(
-//             None,
-//             self.reactor.clone(),
-//             self.clone(),
-//             // self.info_dyn_dev_status.clone(),
-//             format!("{}/{}", self.topic, name.into()), // take the device topic as root
-//         )
-//     }
+    /// Override
+    ///
+    fn create_class<N: Into<String>>(&mut self, name: N) -> ClassBuilder {
+        ClassBuilder::new(
+            None,
+            self.clone(),
+            // self.info_dyn_dev_status.clone(),
+            format!("{}/{}", self.topic, name.into()), // take the device topic as root
+        )
+    }
 
-//     /// Override
-//     ///
-//     fn create_attribute<N: Into<String>>(&mut self, name: N) -> AttributeBuilder {
-//         // self.reactor
-//         //     .create_new_attribute(self.r_notifier.clone())
-//         //     .with_topic(format!("{}/{}", self.topic, name.into())) // take the device topic as root
-//     }
-
-//     /// Override
-//     ///
-//     async fn spawn<N: Send + Into<String>, F>(&mut self, name: N, future: F)
-//     where
-//         F: Future<Output = TaskResult> + Send + 'static,
-//     {
-//         self.spawner.spawn_with_name(name, future.boxed()).unwrap();
-//     }
-// }
+    /// Override
+    ///
+    fn create_attribute<N: Into<String>>(&mut self, name: N) -> AttributeServerBuilder {
+        AttributeServerBuilder::new(None)
+        // self.engine
+        //     .create_new_attribute(self.r_notifier.clone())
+        //     .with_topic(format!("{}/{}", self.topic, name.into())) // take the device topic as root
+    }
+}

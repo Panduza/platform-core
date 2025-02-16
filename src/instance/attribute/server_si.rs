@@ -2,7 +2,7 @@ use std::{future::Future, sync::Arc};
 use tokio::sync::Mutex;
 
 use super::server::AttServer;
-use crate::{generic_att_server_methods, AttributeBuilder, Error, Logger, SiCodec, StableNumber};
+use crate::{generic_att_server_methods, AttributeServerBuilder, Error, Logger, SiCodec, StableNumber};
 
 ///
 ///
@@ -39,7 +39,7 @@ impl SiAttServer {
     ///
     ///
     pub fn new<N: Into<String>>(
-        builder: AttributeBuilder,
+        builder: AttributeServerBuilder,
         unit: N,
         min: f64,
         max: f64,

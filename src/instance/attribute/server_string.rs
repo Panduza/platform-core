@@ -1,6 +1,6 @@
 use super::server::AttServer;
 
-use crate::{generic_att_server_methods, AttributeBuilder, Error, Logger, StringCodec};
+use crate::{generic_att_server_methods, AttributeServerBuilder, Error, Logger, StringCodec};
 
 use std::{future::Future, sync::Arc};
 use tokio::sync::Mutex;
@@ -31,7 +31,7 @@ impl StringAttServer {
 
     ///
     ///
-    pub fn new(builder: AttributeBuilder) -> Self {
+    pub fn new(builder: AttributeServerBuilder) -> Self {
         let obj = AttServer::<StringCodec>::from(builder);
         Self {
             logger: obj.logger.clone(),

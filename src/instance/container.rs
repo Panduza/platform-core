@@ -1,7 +1,6 @@
-use super::class_builder::ClassBuilder;
+use super::{attribute::builder::AttributeServerBuilder, class_builder::ClassBuilder};
 use crate::Logger;
 use async_trait::async_trait;
-use panduza::AttributeBuilder;
 
 #[async_trait]
 /// Common interface shared between Instance and Class
@@ -19,5 +18,5 @@ pub trait Container: Clone {
 
     /// Device can directly create some attribute on its root
     ///
-    fn create_attribute<N: Into<String>>(&mut self, name: N) -> AttributeBuilder;
+    fn create_attribute<N: Into<String>>(&mut self, name: N) -> AttributeServerBuilder;
 }

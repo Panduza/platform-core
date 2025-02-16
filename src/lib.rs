@@ -87,7 +87,7 @@ pub use topic::Topic;
 // pub use instance::InstanceInner;
 
 //
-// pub use instance::attribute::builder::AttributeBuilder;
+// pub use instance::attribute::builder::AttributeServerBuilder;
 // pub use instance::attribute::server_boolean::BooleanAttServer;
 // pub use instance::attribute::server_enum::EnumAttServer;
 // pub use instance::attribute::server_json::JsonAttServer;

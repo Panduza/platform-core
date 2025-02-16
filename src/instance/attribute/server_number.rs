@@ -2,7 +2,7 @@ use std::{future::Future, sync::Arc};
 use tokio::sync::Mutex;
 
 use super::server::AttServer;
-use crate::{generic_att_server_methods, AttributeBuilder, Error, Logger, NumberCodec};
+use crate::{generic_att_server_methods, AttributeServerBuilder, Error, Logger, NumberCodec};
 
 ///
 ///
@@ -32,7 +32,7 @@ impl NumberAttServer {
     ///
     ///
     ///
-    pub fn new(builder: AttributeBuilder) -> Self {
+    pub fn new(builder: AttributeServerBuilder) -> Self {
         let obj = AttServer::<NumberCodec>::from(builder);
         Self {
             logger: obj.logger.clone(),

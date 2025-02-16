@@ -95,7 +95,7 @@ impl Class {
 
 //     /// Override
 //     ///
-//     fn create_attribute<N: Into<String>>(&mut self, name: N) -> AttributeBuilder {
+//     fn create_attribute<N: Into<String>>(&mut self, name: N) -> AttributeServerBuilder {
 //         self.instance
 //             .reactor
 //             .create_new_attribute(self.instance.r_notifier.clone())
