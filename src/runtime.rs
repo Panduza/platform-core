@@ -1,6 +1,6 @@
 pub mod notification;
 use crate::engine::EngineBuilder;
-use crate::{Engine, ProductionOrder, TaskResult};
+use crate::{log_debug, Engine, ProductionOrder, TaskResult};
 use crate::{Factory, Logger};
 use panduza::pubsub::Operator;
 use std::sync::{
@@ -172,15 +172,15 @@ impl Runtime {
                 //
                 production_order = p_order_receiver.recv() => {
 
-                    self.logger.debug(format!( "PROD REQUEST ! [{:?}]", production_order ));
+                    log_debug!(self.logger, "!!! PROD REQUEST ! [{:?}]", production_order );
 
                     let name = production_order.as_ref().unwrap().name.clone();
 
                     // let mut production_order = ProductionOrder::new("panduza.picoha-dio", "testdevice");
                     // production_order.device_settings = json!({});
-                    // let (mut monitor, mut dev) =
-                    //     self.factory
-                    //         .produce(self.engine.clone(), Some(self.notification_sender.clone()), production_order.unwrap());
+                    let mut instance =
+                        self.factory
+                            .produce(self.engine.clone(),  production_order.unwrap());
 
                     // dev.set_plugin(self.logger.get_plugin());
 
@@ -195,6 +195,13 @@ impl Runtime {
                     //         .boxed(),
                     //     )
                     //     .unwrap();
+
+                    tokio::spawn(async move {
+                        loop {
+                            instance.run_fsm().await;
+                        }
+                    });
+
 
                     // self.task_sender
                     //     .spawn_with_name(

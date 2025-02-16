@@ -13,7 +13,7 @@ use class_builder::ClassBuilder;
 pub use container::Container;
 
 use crate::{engine::Engine, Error, InstanceSettings, TaskResult};
-use crate::{Actions, Logger};
+use crate::{log_error, Actions, Logger};
 // use class_builder::ClassBuilder;
 
 use serde::{Deserialize, Serialize};
@@ -89,31 +89,30 @@ impl Instance {
     //
     // reactor
 
-    // /// Create a new instance of the Device
-    // ///
-    // pub fn new(
-    //     reactor: Engine,
-    //     r_notifier: Option<Sender<Notification>>,
-    //     spawner: TaskSender<Result<(), Error>>,
-    //     name: String,
-    //     operations: Box<dyn DriverOperations>,
-    //     settings: Option<InstanceSettings>,
-    // ) -> Instance {
-    //     // Create the object
-    //     Instance {
-    //         logger: Logger::new_for_instance(name.clone()),
-    //         reactor: reactor.clone(),
-    //         // info_pack: info_pack,
-    //         // info_dyn_dev_status: None,
-    //         r_notifier: r_notifier,
-    //         inner: InstanceInner::new(reactor.clone(), settings).into(),
-    //         inner_operations: Arc::new(Mutex::new(operations)),
-    //         topic: format!("{}/{}", reactor.root_topic(), name),
-    //         state: Arc::new(Mutex::new(State::Booting)),
-    //         state_change_notifier: Arc::new(Notify::new()),
-    //         spawner: spawner,
-    //     }
-    // }
+    /// Create a new instance of the Device
+    ///
+    pub fn new(
+        engine: Engine,
+        // r_notifier: Option<Sender<Notification>>,
+        name: String,
+        actions: Box<dyn Actions>,
+        settings: Option<InstanceSettings>,
+    ) -> Instance {
+        // Create the object
+        Instance {
+            logger: Logger::new_for_instance(name.clone()),
+            engine: engine.clone(),
+            // info_pack: info_pack,
+            // info_dyn_dev_status: None,
+            // r_notifier: r_notifier,
+            // inner: InstanceInner::new(reactor.clone(), settings).into(),
+            // inner_operations: Arc::new(Mutex::new(operations)),
+            topic: format!("{}/{}", engine.root_topic(), name),
+            actions: Arc::new(Mutex::new(actions)),
+            state: Arc::new(Mutex::new(State::Booting)),
+            state_change_notifier: Arc::new(Notify::new()),
+        }
+    }
 
     ///
     /// Set the plugin name inside the logger
@@ -128,14 +127,6 @@ impl Instance {
     //     &self.reactor
     // }
 
-    // pub async fn spawn<F>(&mut self, future: F)
-    // where
-    //     F: Future<Output = TaskResult> + Send + 'static,
-    // {
-    //     self.spawner.spawn(future.boxed()).unwrap();
-    // }
-
-    ///
     /// Run the FSM of the device
     ///
     pub async fn run_fsm(&mut self) {
@@ -168,33 +159,33 @@ impl Instance {
                 }
                 State::Connecting => {} // wait for reactor signal
                 State::Initializating => {
-                    // //
-                    // // Try to mount the device
-                    // let mount_result = self.inner_operations.lock().await.mount(self.clone()).await;
-                    // //
-                    // // Manage mount result
-                    // match mount_result {
-                    //     Ok(_) => {
-                    //         self.logger.debug("FSM Mount Success ");
-                    //         self.move_to_state(State::Running).await;
-                    //     }
-                    //     Err(e) => {
-                    //         log_error!(self.logger, "Instance Mount Failure '{:?}'", e);
-                    //         self.move_to_state(State::Error).await;
-                    //     }
-                    // }
+                    //
+                    // Try to mount the device
+                    let mount_result = self.actions.lock().await.mount(self.clone()).await;
+                    //
+                    // Manage mount result
+                    match mount_result {
+                        Ok(_) => {
+                            self.logger.debug("FSM Mount Success ");
+                            self.move_to_state(State::Running).await;
+                        }
+                        Err(e) => {
+                            log_error!(self.logger, "Instance Mount Failure '{:?}'", e);
+                            self.move_to_state(State::Error).await;
+                        }
+                    }
                 }
                 State::Running => {} // do nothing, watch for inner tasks
                 State::Error => {
                     //
                     // Wait before reboot
-                    // self.inner_operations
-                    //     .lock()
-                    //     .await
-                    //     .wait_reboot_event(self.clone())
-                    //     .await;
-                    // self.logger.info("try to reboot");
-                    // self.move_to_state(State::Initializating).await;
+                    self.actions
+                        .lock()
+                        .await
+                        .wait_reboot_event(self.clone())
+                        .await;
+                    self.logger.info("try to reboot");
+                    self.move_to_state(State::Initializating).await;
                 }
                 State::Warning => {}
                 State::Cleaning => {}

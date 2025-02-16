@@ -53,9 +53,12 @@ impl Engine {
         Self { router: router }
     }
 
-    // pub fn root_topic(&self) -> String {
-    //     self.root_topic.clone()
-    // }
+    ///
+    ///
+    pub fn root_topic(&self) -> String {
+        "pza/".to_string()
+        // self.root_topic.clone()
+    }
 
     // pub fn start(
     //     &mut self,

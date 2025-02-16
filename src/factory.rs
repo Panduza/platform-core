@@ -7,7 +7,7 @@ pub mod store;
 use store::{Product, Store};
 use tokio::sync::mpsc::Sender;
 
-use crate::{Engine, Logger, ProductionOrder};
+use crate::{Engine, Instance, Logger, ProductionOrder};
 use std::{collections::HashMap, ffi::CString};
 
 /// Factory to create devices from a configuration json
@@ -102,27 +102,24 @@ impl Factory {
             .map_err(|e| crate::Error::InternalLogic(format!("Failed to build CString ({:?})", e)))
     }
 
-    // /
-    // / production_order => json with ref, name, settings
-    // /
-    // pub fn produce(
-    //     &self,
-    //     reactor: Engine,
-    //     r_notifier: Option<Sender<Notification>>,
-    //     production_order: ProductionOrder,
-    // ) -> (InstanceMonitor, Instance) {
-    //     let producer = self.producers.get(production_order.dref()).unwrap();
-    //     let device_operations = producer.produce().unwrap();
+    /// production_order => json with ref, name, settings
+    ///
+    pub fn produce(
+        &self,
+        engine: Engine,
+        // r_notifier: Option<Sender<Notification>>,
+        production_order: ProductionOrder,
+    ) -> Instance {
+        let producer = self.producers.get(production_order.dref()).unwrap();
+        let instance_actions = producer.produce().unwrap();
 
-    //     // Box<dyn DriverOperations>
-
-    //     InstanceMonitor::new(
-    //         reactor.clone(),
-    //         r_notifier,
-    //         device_operations,
-    //         production_order,
-    //     )
-    // }
+        Instance::new(
+            engine.clone(),
+            production_order.name,
+            instance_actions,
+            None, // settings
+        )
+    }
 }
 
 // ///
