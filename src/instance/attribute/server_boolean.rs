@@ -1,9 +1,11 @@
+use crate::Error;
 use crate::{instance::attribute_builder::AttributeServerBuilder, Logger};
 use bytes::Bytes;
 use panduza::pubsub::Publisher;
 use std::sync::Arc;
 use std::sync::Mutex;
 use tokio::sync::mpsc::Receiver;
+use tokio::sync::Notify;
 // use tokio::sync::Mutex;
 
 #[derive(Default, Debug)]
@@ -15,6 +17,10 @@ struct BooleanDataPack {
     /// Queue of value (need to be poped)
     ///
     queue: Vec<bool>,
+
+    /// Update notifier
+    ///
+    update_notifier: Arc<Notify>,
 }
 
 impl BooleanDataPack {
@@ -22,15 +28,21 @@ impl BooleanDataPack {
     ///
     pub fn push(&mut self, v: bool) {
         // if self.use_input_queue {
-        //     self.queue.push(v);
+        self.queue.push(v);
         // }
-        self.last = Some(v);
+        // self.last = Some(v);
     }
 
     ///
     ///
     pub fn last(&self) -> Option<bool> {
         self.last
+    }
+
+    ///
+    ///
+    pub fn update_notifier(&self) -> Arc<Notify> {
+        self.update_notifier.clone()
     }
 }
 
@@ -94,6 +106,24 @@ impl BooleanAttributeServer {
             att_publisher: att_publisher,
             pack: pack,
         }
+    }
+
+    /// Publish a command
+    ///
+    async fn publish(&self, value: bool) -> Result<(), Error> {
+        // let value = value.into();
+        // let pyl_size = value.len();
+
+        // self.message_client
+        // .publish(&self.topic_att, QoS::AtMostOnce, true, value)
+        // .await
+        // .map_err(|e| Error::PublishError {
+        //     topic: self.topic_att.clone(),
+        //     pyl_size: pyl_size,
+        //     cause: e.to_string(),
+        // })
+
+        Ok(())
     }
 
     // ///

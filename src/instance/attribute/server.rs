@@ -98,18 +98,6 @@ impl<TYPE: MessageCodec> AttServer<TYPE> {
     }
 
     ///
-    /// Subscribe to the topic
-    ///
-    pub async fn subscribe(&self) -> Result<(), Error> {
-        // no need to store the att topic
-        let topic_att = format!("{}/cmd", self.topic);
-        self.message_client
-            .subscribe(topic_att, QoS::AtMostOnce)
-            .await
-            .map_err(|e| Error::MessageAttributeSubscribeError(e.to_string()))
-    }
-
-    ///
     /// Register the attribute to the reactor
     ///
     pub async fn register(&self, attribute: Arc<Mutex<dyn MessageHandler>>) -> Result<(), Error> {
