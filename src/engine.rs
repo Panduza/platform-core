@@ -4,7 +4,7 @@ use options::EngineOptions;
 use panduza::{
     pubsub,
     pubsub::Publisher,
-    router::{Router, RouterHandler},
+    router::{DataReceiver, Router, RouterHandler},
 };
 
 // #[async_trait]

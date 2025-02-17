@@ -1,6 +1,10 @@
 use crate::{instance::attribute_builder::AttributeServerBuilder, Logger};
+use bytes::Bytes;
+use panduza::pubsub::Publisher;
 use std::sync::Arc;
-use tokio::sync::Mutex;
+use std::sync::Mutex;
+use tokio::sync::mpsc::Receiver;
+// use tokio::sync::Mutex;
 
 #[derive(Default, Debug)]
 struct BooleanDataPack {
@@ -13,6 +17,23 @@ struct BooleanDataPack {
     queue: Vec<bool>,
 }
 
+impl BooleanDataPack {
+    ///
+    ///
+    pub fn push(&mut self, v: bool) {
+        // if self.use_input_queue {
+        //     self.queue.push(v);
+        // }
+        self.last = Some(v);
+    }
+
+    ///
+    ///
+    pub fn last(&self) -> Option<bool> {
+        self.last
+    }
+}
+
 ///
 ///
 #[derive(Clone)]
@@ -20,6 +41,10 @@ pub struct BooleanAttributeServer {
     /// Local logger
     ///
     logger: Logger,
+
+    ///
+    ///
+    att_publisher: Publisher,
 
     /// Inner server implementation
     ///
@@ -41,19 +66,34 @@ impl BooleanAttributeServer {
 
     ///
     ///
-    pub fn new(builder: AttributeServerBuilder) -> Self {
-        let topic = builder.topic.as_ref().unwrap().clone();
+    pub fn new(topic: String, mut cmd_receiver: Receiver<Bytes>, att_publisher: Publisher) -> Self {
+        //
+        //
+        let pack = Arc::new(Mutex::new(BooleanDataPack::default()));
+
+        //
+        // Subscribe then check for incomming messages
+        let pack_2 = pack.clone();
+        tokio::spawn(async move {
+            loop {
+                let message = cmd_receiver.recv().await;
+                match message {
+                    Some(data) => {
+                        // Deserialize
+                        let value: bool = serde_json::from_slice(&data).unwrap();
+                        // Push into pack
+                        pack_2.lock().unwrap().push(value);
+                    }
+                    None => todo!(),
+                }
+            }
+        });
+
         Self {
             logger: Logger::new_for_attribute_from_topic(topic.clone()),
-            pack: Arc::new(Mutex::new(BooleanDataPack::default())),
+            att_publisher: att_publisher,
+            pack: pack,
         }
-    }
-
-    ///
-    ///
-    pub fn start(&mut self) {
-        // Subscribe then check for incomming messages
-        tokio::spawn(async move {});
     }
 
     // ///

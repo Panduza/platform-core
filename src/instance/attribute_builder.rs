@@ -111,12 +111,22 @@ impl AttributeServerBuilder {
         //
         self.r#type = Some(BooleanAttributeServer::r#type());
 
-        //
-        //
-        let att = BooleanAttributeServer::new(self.clone());
+        let topic = self.topic.unwrap();
 
-        // // Subscribe then check for incomming messages
-        // tokio::spawn(async move {});
+        let cmd_receiver: tokio::sync::mpsc::Receiver<bytes::Bytes> = self
+            .engine
+            .register_listener(format!("{}/cmd", topic), 50)
+            .await
+            .unwrap();
+
+        let att_publisher = self
+            .engine
+            .register_publisher(format!("{}/att", topic), true)
+            .unwrap();
+
+        //
+        //
+        let att = BooleanAttributeServer::new(topic, cmd_receiver, att_publisher);
 
         // att.inner.lock().await.init(att.inner.clone()).await?;
         // self.send_creation_notification();
