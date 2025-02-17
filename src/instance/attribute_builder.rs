@@ -1,5 +1,6 @@
 use crate::instance::class::Class;
 use crate::runtime::notification::attribute::AttributeMode;
+use crate::Engine;
 use crate::Error;
 use serde_json::json;
 use std::sync::Weak;
@@ -13,19 +14,14 @@ use super::attribute::server_boolean::BooleanAttributeServer;
 /// Object that allow to build an generic attribute
 ///
 pub struct AttributeServerBuilder {
+    /// Platform connection engine
+    ///
+    engine: Engine,
+
     /// Parent class if any
     ///
     parent_class: Option<Class>,
 
-    // /// The mqtt client
-    // pub message_client: MessageClient,
-
-    // /// The Object that allow the reactor to dispatch
-    // /// incoming messages on attributes
-    // pub message_dispatcher: Weak<Mutex<MessageDispatcher>>,
-
-    // ///
-    // pub r_notifier: Option<Sender<Notification>>,
     /// Topic of the attribute
     pub topic: Option<String>,
 
@@ -38,17 +34,21 @@ pub struct AttributeServerBuilder {
     pub r#type: Option<String>,
 
     pub info: Option<String>,
+    // ///
+    // pub r_notifier: Option<Sender<Notification>>,
 }
 
 impl AttributeServerBuilder {
     /// Create a new builder
     pub fn new(
+        engine: Engine,
         parent_class: Option<Class>,
         // message_client: MessageClient,
         // message_dispatcher: Weak<Mutex<MessageDispatcher>>,
         // r_notifier: Option<Sender<Notification>>,
-    ) -> AttributeServerBuilder {
-        AttributeServerBuilder {
+    ) -> Self {
+        Self {
+            engine,
             parent_class,
             // message_client,
             // message_dispatcher,
@@ -60,7 +60,9 @@ impl AttributeServerBuilder {
             info: None,
         }
     }
+
     /// Attach a topic
+    ///
     pub fn with_topic<T: Into<String>>(mut self, topic: T) -> Self {
         self.topic = Some(topic.into());
         self
@@ -104,9 +106,18 @@ impl AttributeServerBuilder {
 
     /// Finish attribute building and configure it with 'boolean' type.
     ///
-    pub async fn finish_as_boolean(mut self) -> Result<BooleanAttributeServer, Error> {
+    pub async fn start_as_boolean(mut self) -> Result<BooleanAttributeServer, Error> {
+        //
+        //
         self.r#type = Some(BooleanAttributeServer::r#type());
+
+        //
+        //
         let att = BooleanAttributeServer::new(self.clone());
+
+        // // Subscribe then check for incomming messages
+        // tokio::spawn(async move {});
+
         // att.inner.lock().await.init(att.inner.clone()).await?;
         // self.send_creation_notification();
 

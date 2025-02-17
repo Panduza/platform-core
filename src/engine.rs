@@ -1,7 +1,11 @@
 pub mod options;
 use options::EngineOptions;
 
-use panduza::router::{Router, RouterHandler};
+use panduza::{
+    pubsub,
+    pubsub::Publisher,
+    router::{Router, RouterHandler},
+};
 
 // #[async_trait]
 // impl MessageHandler for PzaScanMessageHandler {
@@ -58,6 +62,26 @@ impl Engine {
     pub fn root_topic(&self) -> String {
         "pza/".to_string()
         // self.root_topic.clone()
+    }
+
+    /// Register
+    ///
+    pub fn register_listener<A: Into<String> + 'static>(
+        &self,
+        topic: A,
+        channel_size: usize,
+    ) -> impl std::future::Future<Output = Result<DataReceiver, String>> + '_ {
+        self.router.register_listener(topic, channel_size)
+    }
+
+    ///
+    ///
+    pub fn register_publisher<A: Into<String> + 'static>(
+        &self,
+        topic: A,
+        retain: bool,
+    ) -> Result<Publisher, pubsub::Error> {
+        self.router.register_publisher(topic.into(), retain)
     }
 
     // pub fn start(

@@ -49,6 +49,13 @@ impl BooleanAttributeServer {
         }
     }
 
+    ///
+    ///
+    pub fn start(&mut self) {
+        // Subscribe then check for incomming messages
+        tokio::spawn(async move {});
+    }
+
     // ///
     // /// Get the value of the attribute
     // /// If None, the first value is not yet received

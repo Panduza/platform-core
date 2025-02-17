@@ -257,16 +257,17 @@ impl Container for Instance {
             None,
             self.clone(),
             // self.info_dyn_dev_status.clone(),
-            format!("{}/{}", self.topic, name.into()), // take the device topic as root
+            format!("{}/{}", self.topic, name.into()),
         )
     }
 
     /// Override
     ///
     fn create_attribute<N: Into<String>>(&mut self, name: N) -> AttributeServerBuilder {
-        AttributeServerBuilder::new(None)
-        // self.engine
-        //     .create_new_attribute(self.r_notifier.clone())
-        //     .with_topic(format!("{}/{}", self.topic, name.into())) // take the device topic as root
+        AttributeServerBuilder::new(self.engine.clone(), None).with_topic(format!(
+            "{}/{}",
+            self.topic,
+            name.into()
+        ))
     }
 }

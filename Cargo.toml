@@ -8,8 +8,8 @@ readme = "README.md"
 [dependencies]
 
 # Panduza Rust Client
-# panduza = { path = "C:/Users/rodriguez.NET/Documents/workspace/50-PROJET/XX-XXXX-PZA/panduza-rust" }
-panduza = { path = "C:/Users/xavie/workspace/panduza-rust" }
+panduza = { path = "C:/Users/rodriguez.NET/Documents/workspace/50-PROJET/XX-XXXX-PZA/panduza-rust" }
+# panduza = { path = "C:/Users/xavie/workspace/panduza-rust" }
 
 # Main async framework for the platform
 tokio = { version = "1.43.0", features = ["full", "tracing"] }
