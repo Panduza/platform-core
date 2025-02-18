@@ -100,41 +100,11 @@ pub use topic::Topic;
 // pub use instance::Instance;
 // pub use instance::InstanceInner;
 
-//
-// pub use instance::attribute::builder::AttributeServerBuilder;
-// pub use instance::attribute::server_boolean::BooleanAttributeServer;
-// pub use instance::attribute::server_enum::EnumAttServer;
-// pub use instance::attribute::server_json::JsonAttServer;
-// pub use instance::attribute::server_mem_cmd::MemoryCommandAttServer;
-// pub use instance::attribute::server_number::NumberAttServer;
-// pub use instance::attribute::server_si::SiAttServer;
-// pub use instance::attribute::server_string::StringAttServer;
-
-// public traits
-// mod traits;
-// pub use traits::DriverOperations;
-// pub use traits::MessageCodec;
-// pub use traits::MessageHandler;
-// pub use traits::Producer;
-// pub use traits::Scanner;
-
-//
-// mod codec;
-// pub use codec::boolean::BooleanCodec;
-// pub use codec::eenum::EnumCodec;
-// pub use codec::json::JsonCodec;
-// pub use codec::memory_command::MemoryCommandCodec;
-// pub use codec::memory_command::MemoryCommandMode;
-// pub use codec::number::NumberCodec;
-// pub use codec::number_list::NumberListCodec;
-// pub use codec::raw::RawCodec;
-// pub use codec::si::SiCodec;
-// pub use codec::string::StringCodec;
-// pub use codec::string_list::StringListCodec;
-
 /// Return type for spawned task
 pub type TaskResult = Result<(), Error>;
 
+///
+///
 pub mod env;
 
 /// Built-in Protocols & Interfaces to help coding plugins
