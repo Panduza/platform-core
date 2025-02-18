@@ -197,6 +197,12 @@ impl RuntimeBuilder {
         )
     }
 
+    ///
+    ///
+    pub fn clone_notifications(&self) -> Arc<std::sync::Mutex<NotificationGroup>> {
+        self.notifications.clone()
+    }
+
     pub fn start(self) -> Runtime {
         let rr = self.engine_builder.build();
 

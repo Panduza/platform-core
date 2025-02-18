@@ -65,7 +65,9 @@ macro_rules! plugin_interface {
         ///
         #[tokio::main]
         async fn start_async_runtime(runtime_builder: RuntimeBuilder) {
-            runtime_builder.start().task().await.unwrap();
+            let mut runtime = runtime_builder.start();
+            runtime.set_plugin($plg_name);
+            runtime.task().await.unwrap();
         }
 
         ///
@@ -92,8 +94,10 @@ macro_rules! plugin_interface {
             //
             let (mut runtime_builder, runtime_prod_order) =
                 RuntimeBuilder::new(factory.unwrap(), engine_builder);
-            // runtime.set_plugin($plg_name);
-            // RUNTIME_NOTIFICATIONS_GROUP = Some(runtime.clone_notifications());
+
+            //
+            //
+            RUNTIME_NOTIFICATIONS_GROUP = Some(runtime.clone_notifications());
 
             //
             //
