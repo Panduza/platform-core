@@ -7,6 +7,7 @@ macro_rules! plugin_interface {
         use panduza_platform_core::EngineOptions;
         use panduza_platform_core::Factory;
         use panduza_platform_core::Logger;
+        use panduza_platform_core::NotificationGroup;
         use panduza_platform_core::Plugin;
         use panduza_platform_core::ProductionOrder;
         use panduza_platform_core::Runtime;
@@ -42,7 +43,7 @@ macro_rules! plugin_interface {
         ///
         static mut FACTORY_STORE: Option<CString> = None;
 
-        ///
+        /// Handle of the thread
         ///
         static mut THREAD_HANDLE: Option<JoinHandle<()>> = None;
 
@@ -50,14 +51,13 @@ macro_rules! plugin_interface {
         ///
         static mut POS: Option<tokio::sync::mpsc::Sender<ProductionOrder>> = None;
 
+        /// Group of notifications to be send to the platform
         ///
-        ///
-        ///
-        // static mut RUNTIME_NOTIFICATIONS_GROUP: Option<Arc<std::sync::Mutex<NotificationGroup>>> =
-        //     None;
+        static mut RUNTIME_NOTIFICATIONS_GROUP: Option<
+            std::sync::Arc<std::sync::Mutex<NotificationGroup>>,
+        > = None;
 
         // static mut SCAN_MACHINE: Option<ScanMachine> = None;
-
         // static mut FACTORY_SCAN_RESULT: Option<CString> = None;
 
         ///
@@ -171,7 +171,7 @@ macro_rules! plugin_interface {
         pub unsafe extern "C" fn pull_notifications() -> *const c_char {
             //
             // Debug log
-            // LOGGER.as_ref().unwrap().debug("pull_notifications");
+            LOGGER.as_ref().unwrap().debug("pull_notifications");
 
             //
             // Pull notifications from the runtime

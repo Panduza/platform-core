@@ -2,7 +2,7 @@ pub mod notification;
 use crate::engine::EngineBuilder;
 use crate::{log_debug, Engine, ProductionOrder, TaskResult};
 use crate::{Factory, Logger};
-use panduza::pubsub::Operator;
+use notification::Notification;
 use std::sync::{
     atomic::{AtomicBool, Ordering},
     Arc,
@@ -13,15 +13,8 @@ use tokio::sync::{mpsc::channel, Notify};
 
 ///
 ///
-///
-static TASK_CHANNEL_SIZE: usize = 64;
-
-///
-///
-///
 static PROD_ORDER_CHANNEL_SIZE: usize = 64;
 
-///
 ///
 ///
 static NOTIFICATION_CHANNEL_SIZE: usize = 512;
@@ -55,19 +48,22 @@ pub struct Runtime {
     // /// They will help the underscore device to give informations to the user
     // ///
     // notifications: Arc<std::sync::Mutex<NotificationGroup>>,
-    // ///
-    // notification_sender: Sender<Notification>,
-    // ///
-    // notification_receiver: Option<Receiver<Notification>>,
+    ///
+    ///
+    notification_channel: (Sender<Notification>, Receiver<Notification>),
 }
 
 impl Runtime {
     /// Constructor
     ///
-    pub fn new(factory: Factory, engine: Engine, po_receiver: Receiver<ProductionOrder>) -> Self {
+    pub fn new(
+        factory: Factory,
+        engine: Engine,
+        po_receiver: Receiver<ProductionOrder>,
+        notification_channel: (Sender<Notification>, Receiver<Notification>),
+    ) -> Self {
         // let (t_tx, t_rx) = create_task_channel::<TaskResult>(TASK_CHANNEL_SIZE);
         // let (po_tx, po_rx) = channel::<ProductionOrder>(PROD_ORDER_CHANNEL_SIZE);
-        // let (not_tx, not_rx) = channel::<Notification>(NOTIFICATION_CHANNEL_SIZE);
 
         Self {
             logger: Logger::new_for_runtime(),
@@ -79,8 +75,7 @@ impl Runtime {
             // new_task_notifier: Arc::new(Notify::new()),
             production_order_receiver: Some(po_receiver),
             // notifications: Arc::new(std::sync::Mutex::new(NotificationGroup::new())),
-            // notification_sender: not_tx.clone(),
-            // notification_receiver: Some(not_rx),
+            notification_channel: notification_channel,
         }
     }
 
@@ -89,20 +84,6 @@ impl Runtime {
     pub fn set_plugin<A: Into<String>>(&mut self, text: A) {
         self.logger.set_plugin(text);
     }
-
-    // /
-    // / Getter for 'task_sender', need to be get before task start
-    // /
-    // pub fn clone_task_sender(&self) -> TaskSender<TaskResult> {
-    //     self.task_sender.clone()
-    // }
-
-    // ///
-    // /// Getter for 'production_order_sender', need to be get before task start
-    // ///
-    // pub fn clone_production_order_sender(&self) -> Sender<ProductionOrder> {
-    //     self.production_order_sender.clone()
-    // }
 
     ///
     ///
@@ -151,23 +132,7 @@ impl Runtime {
         //
         while self.keep_alive.load(Ordering::Relaxed) {
             tokio::select! {
-                //
-                // Manage new task creation requests
-                //
-                // request = task_receiver.rx.recv() => {
-                //     match request {
-                //         Some(task) => {
-                //             // Function to effectily spawn tasks requested by the system
-                //             let ah = self.task_pool.spawn(task.future);
-                //             log_debug!(self.logger, "New task created [{:?} => {:?}]", ah.id(), task.name );
-                //             self.new_task_notifier.notify_waiters();
-                //         },
-                //         None => {
-                //             log_warn!(self.logger, "Empty Task Request Received !");
-                //         }
-                //     }
-                // },
-                //
+
                 //
                 //
                 production_order = p_order_receiver.recv() => {
@@ -182,19 +147,13 @@ impl Runtime {
                         self.factory
                             .produce(self.engine.clone(),  production_order.unwrap());
 
-                    // dev.set_plugin(self.logger.get_plugin());
 
-                    // let mut dddddd2 = dev.clone();
-                    // self.task_sender
-                    //     .spawn_with_name(
-                    //         format!("{}/fsm", name),
-                    //         async move {
-                    //             dev.run_fsm().await;
-                    //             Ok(())
-                    //         }
-                    //         .boxed(),
-                    //     )
-                    //     .unwrap();
+                    // Plugin name
+                    // instance.set_plugin(self.logger.get_plugin());
+
+                    //
+                    // instance.attach_notification_channel(sender)
+
 
                     tokio::spawn(async move {
                         loop {
@@ -215,22 +174,11 @@ impl Runtime {
                     //     .unwrap();
 
                 },
-                // notif = notification_receiver.recv() => {
-
-                //     // self.logger.trace(format!( "NOTIF [{:?}]", notif ));
-
+                notif = self.notification_channel.1.recv() => {
+                    self.logger.trace(format!( "NOTIF [{:?}]", notif ));
                 //     self.notifications.lock().unwrap().push(notif.unwrap());
-                // },
-                // //
-                // // task to create monitor plugin manager notifications
-                // //
-                // continue_running = self.end_of_all_tasks() => {
-                //     //
-                //     // Manage platform end
-                //     if !continue_running {
-                //         break;
-                //     }
-                // }
+                },
+
             }
         }
 
@@ -250,17 +198,24 @@ pub struct RuntimeBuilder {
     factory: Factory,
     pub engine_builder: EngineBuilder,
     pub po_receiver: Receiver<ProductionOrder>,
+
+    ///
+    ///
+    pub notification_channel: (Sender<Notification>, Receiver<Notification>),
 }
 
 impl RuntimeBuilder {
     pub fn new(factory: Factory, engine_builder: EngineBuilder) -> (Self, Sender<ProductionOrder>) {
         let (po_tx, po_rx) = channel::<ProductionOrder>(PROD_ORDER_CHANNEL_SIZE);
 
+        let (not_tx, not_rx) = channel::<Notification>(NOTIFICATION_CHANNEL_SIZE);
+
         (
             Self {
                 factory: factory,
                 engine_builder: engine_builder,
                 po_receiver: po_rx,
+                notification_channel: (not_tx, not_rx),
             },
             po_tx,
         )
@@ -269,6 +224,11 @@ impl RuntimeBuilder {
     pub fn start(self) -> Runtime {
         let rr = self.engine_builder.build();
 
-        Runtime::new(self.factory, rr, self.po_receiver)
+        Runtime::new(
+            self.factory,
+            rr,
+            self.po_receiver,
+            self.notification_channel,
+        )
     }
 }

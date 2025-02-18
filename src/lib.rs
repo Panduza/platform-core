@@ -80,6 +80,13 @@ pub use instance::Instance;
 pub mod runtime;
 pub use runtime::Runtime;
 pub use runtime::RuntimeBuilder;
+// pub use runtime::notification::attribute::AttributeMode;
+pub use runtime::notification::group::NotificationGroup;
+// pub use runtime::notification::AlertNotification;
+// pub use runtime::notification::AttributeNotification;
+// pub use runtime::notification::ClassNotification;
+// pub use runtime::notification::Notification;
+// pub use runtime::notification::StateNotification;
 
 ///
 ///
@@ -129,14 +136,6 @@ pub use topic::Topic;
 pub type TaskResult = Result<(), Error>;
 
 pub mod env;
-
-// pub use runtime::notification::attribute::AttributeMode;
-// pub use runtime::notification::group::NotificationGroup;
-// pub use runtime::notification::AlertNotification;
-// pub use runtime::notification::AttributeNotification;
-// pub use runtime::notification::ClassNotification;
-// pub use runtime::notification::Notification;
-// pub use runtime::notification::StateNotification;
 
 /// Built-in Protocols & Interfaces to help coding plugins
 ///

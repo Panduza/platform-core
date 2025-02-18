@@ -4,7 +4,6 @@ pub mod class;
 pub mod enablement;
 pub mod group;
 pub mod state;
-
 pub use alert::AlertNotification;
 pub use attribute::AttributeNotification;
 pub use class::ClassNotification;
