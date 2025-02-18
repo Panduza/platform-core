@@ -8,6 +8,7 @@ use tokio::sync::mpsc::Sender;
 use tokio::sync::Mutex;
 
 use super::attribute::server_boolean::BooleanAttributeServer;
+use super::attribute::server_json::JsonAttributeServer;
 
 #[derive(Clone)]
 ///
@@ -104,7 +105,7 @@ impl AttributeServerBuilder {
         self
     }
 
-    /// Finish attribute building and configure it with 'boolean' type.
+    ///
     ///
     pub async fn start_as_boolean(mut self) -> Result<BooleanAttributeServer, Error> {
         //
@@ -128,7 +129,41 @@ impl AttributeServerBuilder {
         //
         let att = BooleanAttributeServer::new(topic, cmd_receiver, att_publisher);
 
-        // att.inner.lock().await.init(att.inner.clone()).await?;
+        // self.send_creation_notification();
+
+        // //
+        // // Attach the attribute to its parent class if exist
+        // if let Some(mut parent_class) = self.parent_class {
+        //     parent_class.push_sub_element(att.clone_as_element()).await;
+        // }
+
+        Ok(att)
+    }
+
+    ///
+    ///
+    pub async fn start_as_json(mut self) -> Result<JsonAttributeServer, Error> {
+        //
+        //
+        self.r#type = Some(JsonAttributeServer::r#type());
+
+        let topic = self.topic.unwrap();
+
+        let cmd_receiver: tokio::sync::mpsc::Receiver<bytes::Bytes> = self
+            .engine
+            .register_listener(format!("{}/cmd", topic), 50)
+            .await
+            .unwrap();
+
+        let att_publisher = self
+            .engine
+            .register_publisher(format!("{}/att", topic), true)
+            .unwrap();
+
+        //
+        //
+        let att = JsonAttributeServer::new(topic, cmd_receiver, att_publisher);
+
         // self.send_creation_notification();
 
         // //

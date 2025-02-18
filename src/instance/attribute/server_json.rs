@@ -1,74 +1,140 @@
-use std::{future::Future, sync::Arc};
-use tokio::sync::Mutex;
+use crate::Error;
+use crate::{instance::attribute_builder::AttributeServerBuilder, Logger};
+use bytes::Bytes;
+use panduza::pubsub::Publisher;
+use std::sync::Arc;
+use std::sync::Mutex;
+use tokio::sync::mpsc::Receiver;
+use tokio::sync::Notify;
+// use tokio::sync::Mutex;
+use serde_json::Value as JsonValue;
 
-use super::server::AttServer;
-use crate::{
-    generic_att_server_methods, instance::element::Element, AttributeServerBuilder, Error,
-    JsonCodec, Logger,
-};
+#[derive(Default, Debug)]
+struct JsonDataPack {
+    /// Queue of value (need to be poped)
+    ///
+    queue: Vec<JsonValue>,
 
-///
+    ///
+    ///
+    update_notifier: Arc<Notify>,
+}
+
+impl JsonDataPack {
+    ///
+    ///
+    pub fn push(&mut self, v: JsonValue) {
+        self.queue.push(v);
+        self.update_notifier.notify_waiters();
+    }
+
+    ///
+    ///
+    pub fn pop(&mut self) -> Option<JsonValue> {
+        if self.queue.is_empty() {
+            return None;
+        }
+        Some(self.queue.remove(0))
+    }
+
+    ///
+    ///
+    pub fn update_notifier(&self) -> Arc<Notify> {
+        self.update_notifier.clone()
+    }
+}
+
 ///
 ///
 #[derive(Clone)]
-pub struct JsonAttServer {
+pub struct JsonAttributeServer {
     /// Local logger
     ///
     logger: Logger,
 
+    ///
+    ///
+    att_publisher: Publisher,
+
     /// Inner server implementation
     ///
-    pub inner: Arc<Mutex<AttServer<JsonCodec>>>,
+    pack: Arc<Mutex<JsonDataPack>>,
+
+    ///
+    ///
+    update_notifier: Arc<Notify>,
 }
 
-impl JsonAttServer {
-    //
-    // Require inner member
-    generic_att_server_methods!();
-
-    /// Clone as an element object
+impl JsonAttributeServer {
+    /// Logger getter
     ///
-    pub fn clone_as_element(&self) -> Element {
-        Element::AsJson(self.clone())
+    pub fn logger(&self) -> &Logger {
+        &self.logger
     }
 
     ///
     ///
     pub fn r#type() -> String {
-        "json".to_string()
+        "Json".to_string()
     }
 
     ///
     ///
-    ///
-    pub fn new(builder: AttributeServerBuilder) -> Self {
-        let obj = AttServer::<JsonCodec>::from(builder);
+    pub fn new(topic: String, mut cmd_receiver: Receiver<Bytes>, att_publisher: Publisher) -> Self {
+        //
+        //
+        let pack = Arc::new(Mutex::new(JsonDataPack::default()));
+
+        //
+        // Subscribe then check for incomming messages
+        let pack_2 = pack.clone();
+        tokio::spawn(async move {
+            loop {
+                let message = cmd_receiver.recv().await;
+                match message {
+                    Some(data) => {
+                        // Deserialize
+                        let value: JsonValue = serde_json::from_slice(&data).unwrap();
+                        // Push into pack
+                        pack_2.lock().unwrap().push(value);
+                    }
+                    None => todo!(),
+                }
+            }
+        });
+
+        //
+        //
+        let n = pack.lock().unwrap().update_notifier();
         Self {
-            logger: obj.logger.clone(),
-            inner: Arc::new(Mutex::new(obj)),
+            logger: Logger::new_for_attribute_from_topic(topic.clone()),
+            att_publisher: att_publisher,
+            pack: pack,
+            update_notifier: n,
         }
-    }
-
-    ///
-    /// Get the value of the attribute
-    /// If None, the first value is not yet received
-    ///
-    pub async fn pop_cmd(&mut self) -> Option<serde_json::Value> {
-        self.inner
-            .lock()
-            .await
-            .pop_cmd()
-            .and_then(|v| Some(v.value))
     }
 
     /// Set the value of the attribute
     ///
-    pub async fn set(&self, value: serde_json::Value) -> Result<(), Error> {
-        self.inner
-            .lock()
-            .await
-            .set(JsonCodec { value: value })
-            .await?;
+    pub async fn set(&self, value: JsonValue) -> Result<(), Error> {
+        // Wrap value into payload
+        let pyl = Bytes::from(serde_json::to_string(&value).unwrap());
+
+        // Send the command
+        self.att_publisher.publish(pyl).await.unwrap();
         Ok(())
+    }
+
+    /// Get the value of the attribute
+    /// If None, the first value is not yet received
+    ///
+    pub async fn pop(&mut self) -> Option<JsonValue> {
+        self.pack.lock().unwrap().pop()
+    }
+
+    ///
+    ///
+    pub async fn wait_for_commands(&self) {
+        self.update_notifier.notified().await;
     }
 }
