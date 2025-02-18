@@ -1,6 +1,6 @@
 pub mod notification;
 use crate::engine::EngineBuilder;
-use crate::{log_debug, Engine, ProductionOrder, TaskResult};
+use crate::{log_debug, Engine, NotificationGroup, ProductionOrder, TaskResult};
 use crate::{Factory, Logger};
 use notification::Notification;
 use std::sync::{
@@ -43,11 +43,12 @@ pub struct Runtime {
 
     /// Sender, allow a sub function to request a register a production order
     production_order_receiver: Option<Receiver<ProductionOrder>>,
-    // ///
-    // /// Notifications that comes from devices
-    // /// They will help the underscore device to give informations to the user
-    // ///
-    // notifications: Arc<std::sync::Mutex<NotificationGroup>>,
+
+    /// Notifications that comes from devices
+    /// They will help the underscore device to give informations to the user
+    ///
+    notifications: Arc<std::sync::Mutex<NotificationGroup>>,
+
     ///
     ///
     notification_channel: (Sender<Notification>, Receiver<Notification>),
@@ -62,19 +63,14 @@ impl Runtime {
         po_receiver: Receiver<ProductionOrder>,
         notification_channel: (Sender<Notification>, Receiver<Notification>),
     ) -> Self {
-        // let (t_tx, t_rx) = create_task_channel::<TaskResult>(TASK_CHANNEL_SIZE);
-        // let (po_tx, po_rx) = channel::<ProductionOrder>(PROD_ORDER_CHANNEL_SIZE);
-
         Self {
             logger: Logger::new_for_runtime(),
             factory: factory,
             engine: engine,
             keep_alive: Arc::new(AtomicBool::new(true)),
             must_stop: Arc::new(AtomicBool::new(false)),
-
-            // new_task_notifier: Arc::new(Notify::new()),
             production_order_receiver: Some(po_receiver),
-            // notifications: Arc::new(std::sync::Mutex::new(NotificationGroup::new())),
+            notifications: Arc::new(std::sync::Mutex::new(NotificationGroup::new())),
             notification_channel: notification_channel,
         }
     }
@@ -88,9 +84,9 @@ impl Runtime {
     ///
     ///
     ///
-    // pub fn clone_notifications(&self) -> Arc<std::sync::Mutex<NotificationGroup>> {
-    //     self.notifications.clone()
-    // }
+    pub fn clone_notifications(&self) -> Arc<std::sync::Mutex<NotificationGroup>> {
+        self.notifications.clone()
+    }
 
     ///
     /// Main task of the runtime, it consume the object itself
@@ -100,17 +96,6 @@ impl Runtime {
         // Debug log
         self.logger.info("Runtime started !");
 
-        // self.reactor.start(self.task_sender.clone()).unwrap();
-
-        // //
-        // // Remove task receiver from self
-        // let mut task_receiver = self
-        //     .task_receiver
-        //     .take()
-        //     .ok_or(crate::Error::InternalLogic(
-        //         "Object 'task_receiver' is 'None'".to_string(),
-        //     ))?;
-
         //
         // Remove production order receiver from self
         let mut p_order_receiver =
@@ -119,15 +104,6 @@ impl Runtime {
                 .ok_or(crate::Error::InternalLogic(
                     "Object 'production_order_receiver' is 'None'".to_string(),
                 ))?;
-
-        //
-        // Remove production order receiver from self
-        // let mut notification_receiver =
-        //     self.notification_receiver
-        //         .take()
-        //         .ok_or(crate::Error::InternalLogic(
-        //             "Object 'notification_receiver' is 'None'".to_string(),
-        //         ))?;
 
         //
         while self.keep_alive.load(Ordering::Relaxed) {
@@ -176,7 +152,7 @@ impl Runtime {
                 },
                 notif = self.notification_channel.1.recv() => {
                     self.logger.trace(format!( "NOTIF [{:?}]", notif ));
-                //     self.notifications.lock().unwrap().push(notif.unwrap());
+                    self.notifications.lock().unwrap().push(notif.unwrap());
                 },
 
             }
