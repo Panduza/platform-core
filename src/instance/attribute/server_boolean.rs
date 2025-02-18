@@ -10,15 +10,14 @@ use tokio::sync::Notify;
 
 #[derive(Default, Debug)]
 struct BooleanDataPack {
-    /// Last value received
-    ///
-    last: Option<bool>,
-
+    // /// Last value received
+    // ///
+    // last: Option<bool>,
     /// Queue of value (need to be poped)
     ///
     queue: Vec<bool>,
 
-    /// Update notifier
+    ///
     ///
     update_notifier: Arc<Notify>,
 }
@@ -27,16 +26,17 @@ impl BooleanDataPack {
     ///
     ///
     pub fn push(&mut self, v: bool) {
-        // if self.use_input_queue {
         self.queue.push(v);
-        // }
-        // self.last = Some(v);
+        self.update_notifier.notify_waiters();
     }
 
     ///
     ///
-    pub fn last(&self) -> Option<bool> {
-        self.last
+    pub fn pop(&mut self) -> Option<bool> {
+        if self.queue.is_empty() {
+            return None;
+        }
+        Some(self.queue.remove(0))
     }
 
     ///
@@ -61,14 +61,18 @@ pub struct BooleanAttributeServer {
     /// Inner server implementation
     ///
     pack: Arc<Mutex<BooleanDataPack>>,
+
+    ///
+    ///
+    update_notifier: Arc<Notify>,
 }
 
 impl BooleanAttributeServer {
-    // /// Clone as an element object
-    // ///
-    // pub fn clone_as_element(&self) -> Element {
-    //     Element::AsBoolean(self.clone())
-    // }
+    /// Logger getter
+    ///
+    pub fn logger(&self) -> &Logger {
+        &self.logger
+    }
 
     ///
     ///
@@ -101,64 +105,38 @@ impl BooleanAttributeServer {
             }
         });
 
+        //
+        //
+        let n = pack.lock().unwrap().update_notifier();
         Self {
             logger: Logger::new_for_attribute_from_topic(topic.clone()),
             att_publisher: att_publisher,
             pack: pack,
+            update_notifier: n,
         }
     }
 
-    /// Publish a command
+    /// Set the value of the attribute
     ///
-    async fn publish(&self, value: bool) -> Result<(), Error> {
-        // let value = value.into();
-        // let pyl_size = value.len();
+    pub async fn set(&self, value: bool) -> Result<(), Error> {
+        // Wrap value into payload
+        let pyl = Bytes::from(serde_json::to_string(&value).unwrap());
 
-        // self.message_client
-        // .publish(&self.topic_att, QoS::AtMostOnce, true, value)
-        // .await
-        // .map_err(|e| Error::PublishError {
-        //     topic: self.topic_att.clone(),
-        //     pyl_size: pyl_size,
-        //     cause: e.to_string(),
-        // })
-
+        // Send the command
+        self.att_publisher.publish(pyl).await.unwrap();
         Ok(())
     }
 
-    // ///
-    // /// Get the value of the attribute
-    // /// If None, the first value is not yet received
-    // ///
-    // pub async fn pop_cmd(&mut self) -> Option<bool> {
-    //     self.inner
-    //         .lock()
-    //         .await
-    //         .pop_cmd()
-    //         .and_then(|v| Some(v.value))
-    // }
+    /// Get the value of the attribute
+    /// If None, the first value is not yet received
+    ///
+    pub async fn pop(&mut self) -> Option<bool> {
+        self.pack.lock().unwrap().pop()
+    }
 
-    // ///
-    // /// Get the value of the attribute
-    // /// If None, the first value is not yet received
-    // ///
-    // pub async fn get_last_cmd(&self) -> Option<bool> {
-    //     return self
-    //         .inner
-    //         .lock()
-    //         .await
-    //         .get_last_cmd()
-    //         .and_then(|v| Some(v.value));
-    // }
-
-    // /// Set the value of the attribute
-    // ///
-    // pub async fn set(&self, value: bool) -> Result<(), Error> {
-    //     self.inner
-    //         .lock()
-    //         .await
-    //         .set(BooleanCodec { value: value })
-    //         .await?;
-    //     Ok(())
-    // }
+    ///
+    ///
+    pub async fn wait_for_commands(&self) {
+        self.update_notifier.notified().await;
+    }
 }

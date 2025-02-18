@@ -1,3 +1,4 @@
+use super::attribute_builder::AttributeServerBuilder;
 // use super::element::Element;
 use super::{class_builder::ClassBuilder, Container};
 use crate::{Error, Instance, Logger, TaskResult};
@@ -74,31 +75,31 @@ impl Class {
     }
 }
 
-// #[async_trait]
-// impl Container for Class {
-//     /// Get for the container logger
-//     ///
-//     fn logger(&self) -> &Logger {
-//         &self.logger
-//     }
+#[async_trait]
+impl Container for Class {
+    /// Get for the container logger
+    ///
+    fn logger(&self) -> &Logger {
+        &self.logger
+    }
 
-//     /// Override
-//     ///
-//     fn create_class<N: Into<String>>(&mut self, name: N) -> ClassBuilder {
-//         ClassBuilder::new(
-//             Some(self.clone()),
-//             self.instance.reactor.clone(),
-//             self.instance.clone(),
-//             format!("{}/{}", self.topic, name.into()), // take the device topic as root
-//         )
-//     }
+    /// Override
+    ///
+    fn create_class<N: Into<String>>(&mut self, name: N) -> ClassBuilder {
+        ClassBuilder::new(
+            Some(self.clone()),
+            self.instance.clone(),
+            format!("{}/{}", self.topic, name.into()),
+        )
+    }
 
-//     /// Override
-//     ///
-//     fn create_attribute<N: Into<String>>(&mut self, name: N) -> AttributeServerBuilder {
-//         self.instance
-//             .reactor
-//             .create_new_attribute(self.instance.r_notifier.clone())
-//             .with_topic(format!("{}/{}", self.topic, name.into()))
-//     }
-// }
+    /// Override
+    ///
+    fn create_attribute<N: Into<String>>(&mut self, name: N) -> AttributeServerBuilder {
+        AttributeServerBuilder::new(self.instance.engine.clone(), None).with_topic(format!(
+            "{}/{}",
+            self.topic,
+            name.into()
+        ))
+    }
+}
