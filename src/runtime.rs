@@ -61,6 +61,7 @@ impl Runtime {
         factory: Factory,
         engine: Engine,
         po_receiver: Receiver<ProductionOrder>,
+        notifications: Arc<std::sync::Mutex<NotificationGroup>>,
         notification_channel: (Sender<Notification>, Receiver<Notification>),
     ) -> Self {
         Self {
@@ -70,7 +71,7 @@ impl Runtime {
             keep_alive: Arc::new(AtomicBool::new(true)),
             must_stop: Arc::new(AtomicBool::new(false)),
             production_order_receiver: Some(po_receiver),
-            notifications: Arc::new(std::sync::Mutex::new(NotificationGroup::new())),
+            notifications: notifications,
             notification_channel: notification_channel,
         }
     }
@@ -177,6 +178,10 @@ pub struct RuntimeBuilder {
 
     ///
     ///
+    pub notifications: Arc<std::sync::Mutex<NotificationGroup>>,
+
+    ///
+    ///
     pub notification_channel: (Sender<Notification>, Receiver<Notification>),
 }
 
@@ -191,6 +196,7 @@ impl RuntimeBuilder {
                 factory: factory,
                 engine_builder: engine_builder,
                 po_receiver: po_rx,
+                notifications: Arc::new(std::sync::Mutex::new(NotificationGroup::new())),
                 notification_channel: (not_tx, not_rx),
             },
             po_tx,
@@ -210,6 +216,7 @@ impl RuntimeBuilder {
             self.factory,
             rr,
             self.po_receiver,
+            self.notifications,
             self.notification_channel,
         )
     }

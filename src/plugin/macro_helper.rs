@@ -87,7 +87,6 @@ macro_rules! plugin_interface {
             //
             //
             let engine_options = EngineOptions::default();
-            // let mut engine = new_engine(engine_options).unwrap();
             let engine_builder = EngineBuilder::new(engine_options);
 
             //
@@ -97,7 +96,7 @@ macro_rules! plugin_interface {
 
             //
             //
-            RUNTIME_NOTIFICATIONS_GROUP = Some(runtime.clone_notifications());
+            RUNTIME_NOTIFICATIONS_GROUP = Some(runtime_builder.clone_notifications());
 
             //
             //
@@ -179,20 +178,20 @@ macro_rules! plugin_interface {
 
             //
             // Pull notifications from the runtime
-            // match &RUNTIME_NOTIFICATIONS_GROUP {
-            //     Some(notifications) => {
-            //         return notifications.lock().unwrap().pull_and_serialize();
-            //     }
-            //     None => {
-            //         LOGGER
-            //             .as_ref()
-            //             .unwrap()
-            //             .error("RUNTIME_NOTIFICATIONS_GROUP is 'None'");
-            //         return std::ptr::null();
-            //     }
-            // }
+            match &RUNTIME_NOTIFICATIONS_GROUP {
+                Some(notifications) => {
+                    return notifications.lock().unwrap().pull_and_serialize();
+                }
+                None => {
+                    LOGGER
+                        .as_ref()
+                        .unwrap()
+                        .error("RUNTIME_NOTIFICATIONS_GROUP is 'None'");
+                    return std::ptr::null();
+                }
+            }
 
-            return std::ptr::null();
+            // return std::ptr::null();
         }
 
         /// Entry Point of the plugin
