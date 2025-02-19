@@ -9,8 +9,8 @@ use std::sync::Weak;
 use tokio::sync::mpsc::Sender;
 use tokio::sync::Mutex;
 
-use super::attribute::server_boolean::BooleanAttributeServer;
-use super::attribute::server_json::JsonAttributeServer;
+use super::server::boolean::BooleanAttributeServer;
+use super::server::json::JsonAttributeServer;
 
 #[derive(Clone)]
 ///
