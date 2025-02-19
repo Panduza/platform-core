@@ -1,6 +1,6 @@
 use tokio::sync::mpsc::Sender;
 
-use crate::Notification;
+use crate::{ClassNotification, Notification};
 
 use super::{class::Class, Instance};
 
@@ -57,12 +57,19 @@ impl ClassBuilder {
     ///
     pub async fn finish(self) -> Class {
         let bis = self.topic.clone();
-        // if let Some(r_notifier) = self.instance.r_notifier.clone() {
-        //     r_notifier
-        //         .try_send(ClassNotification::new(bis, self.tags.clone()).into())
-        //         .unwrap();
-        // }
-        // insert in status
+
+        //
+        // Debug
+        println!("channel notification !!");
+
+        //
+        //
+        self.notification_channel
+            .send(ClassNotification::new(bis, self.tags.clone()).into())
+            .await
+            .unwrap();
+
+        //
         let class = Class::new(&self, self.notification_channel.clone());
 
         //

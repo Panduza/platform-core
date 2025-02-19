@@ -27,8 +27,8 @@ impl ClassNotification {
 
     /// Topic getter
     ///
-    pub fn topic(&self) -> String {
-        self.topic.clone()
+    pub fn topic(&self) -> &String {
+        &self.topic
     }
 
     pub fn into_json_value(&self) -> serde_json::Value {

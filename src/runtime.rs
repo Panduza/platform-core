@@ -1,6 +1,6 @@
 pub mod notification;
 use crate::engine::EngineBuilder;
-use crate::{log_debug, Engine, NotificationGroup, ProductionOrder, TaskResult};
+use crate::{log_debug, log_trace, Engine, NotificationGroup, ProductionOrder, TaskResult};
 use crate::{Factory, Logger};
 use notification::Notification;
 use std::sync::{
@@ -84,6 +84,12 @@ impl Runtime {
 
     ///
     ///
+    pub fn notification_channel(&self) -> Sender<Notification> {
+        self.notification_channel.0.clone()
+    }
+
+    ///
+    ///
     ///
     pub fn clone_notifications(&self) -> Arc<std::sync::Mutex<NotificationGroup>> {
         self.notifications.clone()
@@ -150,7 +156,7 @@ impl Runtime {
 
                 },
                 notif = self.notification_channel.1.recv() => {
-                    self.logger.trace(format!( "NOTIF [{:?}]", notif ));
+                    log_trace!(self.logger,  "NOTIF [{:?}]", notif );
                     self.notifications.lock().unwrap().push(notif.unwrap());
                 },
 
@@ -205,6 +211,12 @@ impl RuntimeBuilder {
     ///
     pub fn clone_notifications(&self) -> Arc<std::sync::Mutex<NotificationGroup>> {
         self.notifications.clone()
+    }
+
+    ///
+    ///
+    pub fn notification_channel(&self) -> Sender<Notification> {
+        self.notification_channel.0.clone()
     }
 
     pub fn start(self) -> Runtime {

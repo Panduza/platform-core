@@ -153,6 +153,8 @@ macro_rules! plugin_interface {
         /// Produce a new driver instance
         ///
         pub unsafe extern "C" fn produce(str_production_order: *const c_char) -> u32 {
+            //
+            // Debug log
             LOGGER.as_ref().unwrap().trace("produce");
 
             //
@@ -174,7 +176,7 @@ macro_rules! plugin_interface {
         pub unsafe extern "C" fn pull_notifications() -> *const c_char {
             //
             // Debug log
-            LOGGER.as_ref().unwrap().debug("pull_notifications");
+            // LOGGER.as_ref().unwrap().debug("pull_notifications");
 
             //
             // Pull notifications from the runtime

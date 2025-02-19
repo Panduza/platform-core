@@ -1,5 +1,6 @@
 use crate::instance::class::Class;
 use crate::runtime::notification::attribute::AttributeMode;
+use crate::AttributeNotification;
 use crate::Engine;
 use crate::Error;
 use crate::Notification;
@@ -44,6 +45,7 @@ pub struct AttributeServerBuilder {
 
 impl AttributeServerBuilder {
     /// Create a new builder
+    ///
     pub fn new(
         engine: Engine,
         parent_class: Option<Class>,
@@ -71,7 +73,6 @@ impl AttributeServerBuilder {
         self
     }
 
-    ///
     /// Attach settings to the attribute
     ///
     pub fn with_settings(mut self, settings: serde_json::Value) -> Self {
@@ -114,6 +115,10 @@ impl AttributeServerBuilder {
         //
         self.r#type = Some(BooleanAttributeServer::r#type());
 
+        //
+        //
+        self.send_creation_notification().await;
+
         let topic = self.topic.unwrap();
 
         let cmd_receiver: tokio::sync::mpsc::Receiver<bytes::Bytes> = self
@@ -131,8 +136,6 @@ impl AttributeServerBuilder {
         //
         let att = BooleanAttributeServer::new(topic, cmd_receiver, att_publisher);
 
-        // self.send_creation_notification();
-
         // //
         // // Attach the attribute to its parent class if exist
         // if let Some(mut parent_class) = self.parent_class {
@@ -148,6 +151,10 @@ impl AttributeServerBuilder {
         //
         //
         self.r#type = Some(JsonAttributeServer::r#type());
+
+        //
+        //
+        self.send_creation_notification().await;
 
         let topic = self.topic.unwrap();
 
@@ -165,8 +172,6 @@ impl AttributeServerBuilder {
         //
         //
         let att = JsonAttributeServer::new(topic, cmd_receiver, att_publisher);
-
-        // self.send_creation_notification();
 
         // //
         // // Attach the attribute to its parent class if exist
@@ -281,26 +286,28 @@ impl AttributeServerBuilder {
     //     Ok(att)
     // }
 
-    // ///
-    // ///
-    // ///
-    // fn send_creation_notification(&self) {
-    //     //
-    //     //
-    //     let bis = self.topic.clone().unwrap();
-    //     if let Some(r_notifier) = self.r_notifier.clone() {
-    //         r_notifier
-    //             .try_send(
-    //                 AttributeNotification::new(
-    //                     bis,
-    //                     self.r#type.clone().unwrap(),
-    //                     self.mode.clone().unwrap(),
-    //                     self.info.clone(),
-    //                     self.settings.clone(),
-    //                 )
-    //                 .into(),
-    //             )
-    //             .unwrap();
-    //     }
-    // }
+    ///
+    ///
+    async fn send_creation_notification(&self) {
+        //
+        // Debug
+        println!("channel send_creation_notification !!");
+
+        //
+        //
+        let bis = self.topic.clone().unwrap();
+        self.notification_channel
+            .send(
+                AttributeNotification::new(
+                    bis,
+                    self.r#type.clone().unwrap(),
+                    self.mode.clone().unwrap(),
+                    self.info.clone(),
+                    self.settings.clone(),
+                )
+                .into(),
+            )
+            .await
+            .unwrap();
+    }
 }
