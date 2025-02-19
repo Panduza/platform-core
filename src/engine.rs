@@ -60,7 +60,7 @@ impl Engine {
     ///
     ///
     pub fn root_topic(&self) -> String {
-        "pza/".to_string()
+        "pza".to_string()
         // self.root_topic.clone()
     }
 

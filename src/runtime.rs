@@ -89,6 +89,10 @@ impl Runtime {
         self.notifications.clone()
     }
 
+    pub fn engine(&self) -> &Engine {
+        &self.engine
+    }
+
     ///
     /// Main task of the runtime, it consume the object itself
     ///
