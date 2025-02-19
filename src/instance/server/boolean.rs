@@ -1,5 +1,5 @@
 use crate::Error;
-use crate::{instance::attribute_builder::AttributeServerBuilder, Logger};
+use crate::Logger;
 use bytes::Bytes;
 use panduza::pubsub::Publisher;
 use std::sync::Arc;

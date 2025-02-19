@@ -1,13 +1,12 @@
 use crate::Error;
-use crate::{instance::attribute_builder::AttributeServerBuilder, Logger};
+use crate::Logger;
 use bytes::Bytes;
 use panduza::pubsub::Publisher;
+use serde_json::Value as JsonValue;
 use std::sync::Arc;
 use std::sync::Mutex;
 use tokio::sync::mpsc::Receiver;
 use tokio::sync::Notify;
-// use tokio::sync::Mutex;
-use serde_json::Value as JsonValue;
 
 #[derive(Default, Debug)]
 struct JsonDataPack {

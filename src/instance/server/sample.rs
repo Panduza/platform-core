@@ -10,9 +10,6 @@ use tokio::sync::Notify;
 
 #[derive(Default, Debug)]
 struct SampleDataPack {
-    // /// Last value received
-    // ///
-    // last: Option<bool>,
     /// Queue of value (need to be poped)
     ///
     queue: Vec<SampleBuffer>,
@@ -77,7 +74,7 @@ impl SampleAttributeServer {
     ///
     ///
     pub fn r#type() -> String {
-        "Sample".to_string()
+        "sample".to_string()
     }
 
     ///
