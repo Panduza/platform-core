@@ -1,3 +1,7 @@
+use tokio::sync::mpsc::Sender;
+
+use crate::Notification;
+
 use super::{class::Class, Instance};
 
 pub struct ClassBuilder {
@@ -18,6 +22,10 @@ pub struct ClassBuilder {
     pub topic: String,
 
     pub tags: Vec<String>,
+
+    ///
+    ///
+    notification_channel: Sender<Notification>,
 }
 
 impl ClassBuilder {
@@ -26,6 +34,7 @@ impl ClassBuilder {
         instance: Instance,
         // device_dyn_info: Option<ThreadSafeInfoDynamicDeviceStatus>,
         topic: N,
+        notification_channel: Sender<Notification>,
     ) -> Self {
         Self {
             parent_class: parent_class,
@@ -34,6 +43,7 @@ impl ClassBuilder {
             // device_dyn_info: device_dyn_info,
             topic: topic.into(),
             tags: Vec::new(),
+            notification_channel: notification_channel,
         }
     }
 
@@ -53,7 +63,7 @@ impl ClassBuilder {
         //         .unwrap();
         // }
         // insert in status
-        let class = Class::new(&self);
+        let class = Class::new(&self, self.notification_channel.clone());
 
         //
         // Attach the attribute to its parent class if exist

@@ -126,16 +126,10 @@ impl Runtime {
                     // production_order.device_settings = json!({});
                     let mut instance =
                         self.factory
-                            .produce(self.engine.clone(),  production_order.unwrap());
+                            .produce(self.engine.clone(),  production_order.unwrap(), self.notification_channel.0.clone());
 
-
-                    // Plugin name
-                    // instance.set_plugin(self.logger.get_plugin());
 
                     //
-                    // instance.attach_notification_channel(sender)
-
-
                     tokio::spawn(async move {
                         loop {
                             instance.run_fsm().await;

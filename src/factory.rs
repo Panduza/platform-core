@@ -7,7 +7,7 @@ pub mod store;
 use store::{Product, Store};
 use tokio::sync::mpsc::Sender;
 
-use crate::{Engine, Instance, Logger, ProductionOrder};
+use crate::{Engine, Instance, Logger, Notification, ProductionOrder};
 use std::{collections::HashMap, ffi::CString};
 
 /// Factory to create devices from a configuration json
@@ -107,8 +107,8 @@ impl Factory {
     pub fn produce(
         &self,
         engine: Engine,
-        // r_notifier: Option<Sender<Notification>>,
         production_order: ProductionOrder,
+        notification_channel: Sender<Notification>,
     ) -> Instance {
         let producer = self.producers.get(production_order.dref()).unwrap();
         let instance_actions = producer.produce().unwrap();
@@ -118,6 +118,7 @@ impl Factory {
             production_order.name,
             instance_actions,
             None, // settings
+            notification_channel,
         )
     }
 }

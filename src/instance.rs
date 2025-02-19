@@ -14,7 +14,7 @@ use class_builder::ClassBuilder;
 pub use container::Container;
 
 use crate::{engine::Engine, Error, InstanceSettings, TaskResult};
-use crate::{log_error, Actions, Logger};
+use crate::{log_error, Actions, Logger, Notification};
 // use class_builder::ClassBuilder;
 
 use serde::{Deserialize, Serialize};
@@ -84,6 +84,10 @@ pub struct Instance {
     /// Notifier for state change
     ///
     state_change_notifier: Arc<Notify>,
+
+    ///
+    ///
+    notification_channel: Sender<Notification>,
 }
 
 impl Instance {
@@ -94,10 +98,10 @@ impl Instance {
     ///
     pub fn new(
         engine: Engine,
-        // r_notifier: Option<Sender<Notification>>,
         name: String,
         actions: Box<dyn Actions>,
         settings: Option<InstanceSettings>,
+        notification_channel: Sender<Notification>,
     ) -> Instance {
         // Create the object
         Instance {
@@ -112,6 +116,7 @@ impl Instance {
             actions: Arc::new(Mutex::new(actions)),
             state: Arc::new(Mutex::new(State::Booting)),
             state_change_notifier: Arc::new(Notify::new()),
+            notification_channel: notification_channel,
         }
     }
 
@@ -258,16 +263,14 @@ impl Container for Instance {
             self.clone(),
             // self.info_dyn_dev_status.clone(),
             format!("{}/{}", self.topic, name.into()),
+            self.notification_channel.clone(),
         )
     }
 
     /// Override
     ///
     fn create_attribute<N: Into<String>>(&mut self, name: N) -> AttributeServerBuilder {
-        AttributeServerBuilder::new(self.engine.clone(), None).with_topic(format!(
-            "{}/{}",
-            self.topic,
-            name.into()
-        ))
+        AttributeServerBuilder::new(self.engine.clone(), None, self.notification_channel.clone())
+            .with_topic(format!("{}/{}", self.topic, name.into()))
     }
 }

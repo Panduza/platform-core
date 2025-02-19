@@ -2,6 +2,7 @@ use crate::instance::class::Class;
 use crate::runtime::notification::attribute::AttributeMode;
 use crate::Engine;
 use crate::Error;
+use crate::Notification;
 use serde_json::json;
 use std::sync::Weak;
 use tokio::sync::mpsc::Sender;
@@ -35,8 +36,10 @@ pub struct AttributeServerBuilder {
     pub r#type: Option<String>,
 
     pub info: Option<String>,
-    // ///
-    // pub r_notifier: Option<Sender<Notification>>,
+
+    ///
+    ///
+    notification_channel: Sender<Notification>,
 }
 
 impl AttributeServerBuilder {
@@ -44,9 +47,7 @@ impl AttributeServerBuilder {
     pub fn new(
         engine: Engine,
         parent_class: Option<Class>,
-        // message_client: MessageClient,
-        // message_dispatcher: Weak<Mutex<MessageDispatcher>>,
-        // r_notifier: Option<Sender<Notification>>,
+        notification_channel: Sender<Notification>,
     ) -> Self {
         Self {
             engine,
@@ -59,6 +60,7 @@ impl AttributeServerBuilder {
             mode: None,
             r#type: None,
             info: None,
+            notification_channel: notification_channel,
         }
     }
 

@@ -1,12 +1,13 @@
 use super::attribute_builder::AttributeServerBuilder;
 // use super::element::Element;
 use super::{class_builder::ClassBuilder, Container};
-use crate::{Error, Instance, Logger, TaskResult};
+use crate::{Error, Instance, Logger, Notification, TaskResult};
 use async_trait::async_trait;
 use futures::lock::Mutex;
 use std::future::Future;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use tokio::sync::mpsc::Sender;
 
 #[derive(Clone)]
 ///
@@ -28,6 +29,10 @@ pub struct Class {
     ///
     ///
     enabled: Arc<AtomicBool>,
+
+    ///
+    ///
+    notification_channel: Sender<Notification>,
     // / Sub elements
     // /
     // sub_elements: Arc<Mutex<Vec<Element>>>,
@@ -36,13 +41,13 @@ pub struct Class {
 impl Class {
     ///
     ///
-    pub fn new(builder: &ClassBuilder) -> Self {
+    pub fn new(builder: &ClassBuilder, notification_channel: Sender<Notification>) -> Self {
         Class {
             logger: builder.instance.logger.new_for_class(&builder.topic),
             instance: builder.instance.clone(),
             topic: builder.topic.clone(),
             enabled: Arc::new(AtomicBool::new(true)),
-            // sub_elements: Arc::new(Mutex::new(Vec::new())),
+            notification_channel: notification_channel, // sub_elements: Arc::new(Mutex::new(Vec::new())),
         }
     }
 
@@ -90,16 +95,18 @@ impl Container for Class {
             Some(self.clone()),
             self.instance.clone(),
             format!("{}/{}", self.topic, name.into()),
+            self.notification_channel.clone(),
         )
     }
 
     /// Override
     ///
     fn create_attribute<N: Into<String>>(&mut self, name: N) -> AttributeServerBuilder {
-        AttributeServerBuilder::new(self.instance.engine.clone(), None).with_topic(format!(
-            "{}/{}",
-            self.topic,
-            name.into()
-        ))
+        AttributeServerBuilder::new(
+            self.instance.engine.clone(),
+            None,
+            self.notification_channel.clone(),
+        )
+        .with_topic(format!("{}/{}", self.topic, name.into()))
     }
 }
