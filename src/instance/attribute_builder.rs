@@ -229,6 +229,43 @@ impl AttributeServerBuilder {
 
     ///
     ///
+    pub async fn start_as_string(mut self) -> Result<StringAttributeServer, Error> {
+        //
+        //
+        self.r#type = Some(StringAttributeServer::r#type());
+
+        //
+        //
+        self.send_creation_notification().await;
+
+        let topic = self.topic.unwrap();
+
+        let cmd_receiver: tokio::sync::mpsc::Receiver<bytes::Bytes> = self
+            .engine
+            .register_listener(format!("{}/cmd", topic), 50)
+            .await
+            .unwrap();
+
+        let att_publisher = self
+            .engine
+            .register_publisher(format!("{}/att", topic), true)
+            .unwrap();
+
+        //
+        //
+        let att = StringAttributeServer::new(topic, cmd_receiver, att_publisher);
+
+        // //
+        // // Attach the attribute to its parent class if exist
+        // if let Some(mut parent_class) = self.parent_class {
+        //     parent_class.push_sub_element(att.clone_as_element()).await;
+        // }
+
+        Ok(att)
+    }
+
+    ///
+    ///
     async fn send_creation_notification(&self) {
         //
         // Debug
