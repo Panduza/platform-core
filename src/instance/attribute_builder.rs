@@ -1,12 +1,14 @@
 use super::server::boolean::BooleanAttributeServer;
 use super::server::json::JsonAttributeServer;
 use super::server::si::SiAttributeServer;
+use super::server::string::StringAttributeServer;
 use crate::instance::class::Class;
 use crate::runtime::notification::attribute::AttributeMode;
 use crate::AttributeNotification;
 use crate::Engine;
 use crate::Error;
 use crate::Notification;
+use panduza::pubsub::Publisher;
 use tokio::sync::mpsc::Sender;
 
 #[derive(Clone)]
@@ -104,16 +106,40 @@ impl AttributeServerBuilder {
 
     ///
     ///
-    pub async fn start_as_boolean(mut self) -> Result<BooleanAttributeServer, Error> {
+    async fn send_creation_notification(&self) {
         //
-        //
-        self.r#type = Some(BooleanAttributeServer::r#type());
+        // Debug
+        // println!("channel send_creation_notification !!");
 
+        //
+        //
+        let bis = self.topic.clone().unwrap();
+        self.notification_channel
+            .send(
+                AttributeNotification::new(
+                    bis,
+                    self.r#type.clone().unwrap(),
+                    self.mode.clone().unwrap(),
+                    self.info.clone(),
+                    self.settings.clone(),
+                )
+                .into(),
+            )
+            .await
+            .unwrap();
+    }
+
+    ///
+    ///
+    async fn common_ops(
+        &self,
+        cmd_channel_size: usize,
+    ) -> (tokio::sync::mpsc::Receiver<bytes::Bytes>, Publisher) {
         //
         //
         self.send_creation_notification().await;
 
-        let topic = self.topic.unwrap();
+        let topic = self.topic.as_ref().unwrap();
 
         let cmd_receiver: tokio::sync::mpsc::Receiver<bytes::Bytes> = self
             .engine
@@ -126,16 +152,16 @@ impl AttributeServerBuilder {
             .register_publisher(format!("{}/att", topic), true)
             .unwrap();
 
-        //
-        //
+        (cmd_receiver, att_publisher)
+    }
+
+    ///
+    ///
+    pub async fn start_as_boolean(mut self) -> Result<BooleanAttributeServer, Error> {
+        let topic = self.topic.as_ref().unwrap();
+        self.r#type = Some(BooleanAttributeServer::r#type());
+        let (cmd_receiver, att_publisher) = self.common_ops(50).await;
         let att = BooleanAttributeServer::new(topic, cmd_receiver, att_publisher);
-
-        // //
-        // // Attach the attribute to its parent class if exist
-        // if let Some(mut parent_class) = self.parent_class {
-        //     parent_class.push_sub_element(att.clone_as_element()).await;
-        // }
-
         Ok(att)
     }
 
@@ -262,30 +288,5 @@ impl AttributeServerBuilder {
         // }
 
         Ok(att)
-    }
-
-    ///
-    ///
-    async fn send_creation_notification(&self) {
-        //
-        // Debug
-        // println!("channel send_creation_notification !!");
-
-        //
-        //
-        let bis = self.topic.clone().unwrap();
-        self.notification_channel
-            .send(
-                AttributeNotification::new(
-                    bis,
-                    self.r#type.clone().unwrap(),
-                    self.mode.clone().unwrap(),
-                    self.info.clone(),
-                    self.settings.clone(),
-                )
-                .into(),
-            )
-            .await
-            .unwrap();
     }
 }
