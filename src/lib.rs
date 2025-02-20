@@ -138,10 +138,3 @@ pub mod props;
 pub use props::Prop;
 pub use props::PropType;
 pub use props::Props;
-
-///
-///
-///
-// pub mod std;
-pub mod stable_number;
-pub use stable_number::StableNumber;

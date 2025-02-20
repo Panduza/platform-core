@@ -1,16 +1,13 @@
+use super::server::boolean::BooleanAttributeServer;
+use super::server::json::JsonAttributeServer;
+use super::server::si::SiAttributeServer;
 use crate::instance::class::Class;
 use crate::runtime::notification::attribute::AttributeMode;
 use crate::AttributeNotification;
 use crate::Engine;
 use crate::Error;
 use crate::Notification;
-use serde_json::json;
-use std::sync::Weak;
 use tokio::sync::mpsc::Sender;
-use tokio::sync::Mutex;
-
-use super::server::boolean::BooleanAttributeServer;
-use super::server::json::JsonAttributeServer;
 
 #[derive(Clone)]
 ///
@@ -54,9 +51,6 @@ impl AttributeServerBuilder {
         Self {
             engine,
             parent_class,
-            // message_client,
-            // message_dispatcher,
-            // r_notifier,
             topic: None,
             settings: None,
             mode: None,
@@ -182,116 +176,63 @@ impl AttributeServerBuilder {
         Ok(att)
     }
 
-    // ///
-    // ///
-    // ///
-    // pub async fn finish_as_si<N: Into<String>>(
-    //     mut self,
-    //     unit: N,
-    //     min: f64,
-    //     max: f64,
-    //     decimals: usize,
-    // ) -> Result<SiAttServer, Error> {
-    //     self.r#type = Some(SiAttServer::r#type());
-    //     let unit_string = unit.into();
-    //     self.settings = Some(json!(
-    //         {
-    //             "unit": unit_string.clone(),
-    //             "min": min,
-    //             "max": max,
-    //             "decimals": decimals,
-    //         }
-    //     ));
-    //     let att = SiAttServer::new(self.clone(), unit_string, min, max, decimals);
-    //     att.inner.lock().await.init(att.inner.clone()).await?;
-    //     self.send_creation_notification();
-    //     Ok(att)
-    // }
+    ///
+    ///
+    pub async fn start_as_si<N: Into<String>>(
+        mut self,
+        unit: N,
+        min: f64,
+        max: f64,
+        decimals: usize,
+    ) -> Result<SiAttributeServer, Error> {
+        //
+        //
+        self.r#type = Some(SiAttributeServer::r#type());
 
-    // ///
-    // /// Finish attribute building and configure it with 'string' type.
-    // ///
-    // pub async fn finish_as_string(mut self) -> Result<StringAttServer, Error> {
-    //     self.r#type = Some(StringAttServer::r#type());
-    //     let att = StringAttServer::new(self.clone());
-    //     att.inner.lock().await.init(att.inner.clone()).await?;
-    //     self.send_creation_notification();
-    //     Ok(att)
-    // }
+        //
+        //
+        self.send_creation_notification().await;
 
-    // /// Finish attribute building and configure it with 'enum' type.
-    // ///
-    // pub async fn finish_as_enum<S: Into<String>>(
-    //     mut self,
-    //     choices: Vec<S>,
-    // ) -> Result<EnumAttServer, Error> {
-    //     self.r#type = Some(EnumAttServer::r#type());
+        let topic = self.topic.unwrap();
 
-    //     //
-    //     // Convert choices to Vec<String>
-    //     let choices: Vec<String> = choices.into_iter().map(Into::into).collect();
+        let cmd_receiver: tokio::sync::mpsc::Receiver<bytes::Bytes> = self
+            .engine
+            .register_listener(format!("{}/cmd", topic), 50)
+            .await
+            .unwrap();
 
-    //     //
-    //     // Provide enum settings
-    //     self.settings = Some(json!(
-    //         {
-    //             "choices": choices.clone(),
-    //         }
-    //     ));
+        let att_publisher = self
+            .engine
+            .register_publisher(format!("{}/att", topic), true)
+            .unwrap();
 
-    //     //
-    //     // Create server object
-    //     let att = EnumAttServer::new(self.clone(), choices);
-    //     att.inner.lock().await.init(att.inner.clone()).await?;
-    //     self.send_creation_notification();
-    //     Ok(att)
-    // }
+        //
+        //
+        let att = SiAttributeServer::new(
+            topic,
+            cmd_receiver,
+            att_publisher,
+            unit.into(),
+            min,
+            max,
+            decimals,
+        );
 
-    // ///
-    // /// Finish attribute building and configure it with 'json' type.
-    // ///
-    // pub async fn finish_as_json(mut self) -> Result<JsonAttServer, Error> {
-    //     self.r#type = Some(JsonAttServer::r#type());
-    //     let att = JsonAttServer::new(self.clone());
+        // //
+        // // Attach the attribute to its parent class if exist
+        // if let Some(mut parent_class) = self.parent_class {
+        //     parent_class.push_sub_element(att.clone_as_element()).await;
+        // }
 
-    //     att.inner.lock().await.init(att.inner.clone()).await?;
-    //     self.send_creation_notification();
-
-    //     //
-    //     // Attach the attribute to its parent class if exist
-    //     if let Some(mut parent_class) = self.parent_class {
-    //         parent_class.push_sub_element(att.clone_as_element()).await;
-    //     }
-
-    //     Ok(att)
-    // }
-
-    // ///
-    // ///
-    // pub async fn finish_as_number(mut self) -> Result<NumberAttServer, Error> {
-    //     self.r#type = Some(NumberAttServer::r#type());
-    //     let att = NumberAttServer::new(self.clone());
-    //     att.inner.lock().await.init(att.inner.clone()).await?;
-    //     self.send_creation_notification();
-    //     Ok(att)
-    // }
-
-    // ///
-    // ///
-    // pub async fn finish_as_memory_command(mut self) -> Result<MemoryCommandAttServer, Error> {
-    //     self.r#type = Some(MemoryCommandAttServer::r#type());
-    //     let att = MemoryCommandAttServer::new(self.clone());
-    //     att.inner.lock().await.init(att.inner.clone()).await?;
-    //     self.send_creation_notification();
-    //     Ok(att)
-    // }
+        Ok(att)
+    }
 
     ///
     ///
     async fn send_creation_notification(&self) {
         //
         // Debug
-        println!("channel send_creation_notification !!");
+        // println!("channel send_creation_notification !!");
 
         //
         //
