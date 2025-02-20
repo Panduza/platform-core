@@ -175,7 +175,12 @@ impl AttributeServerBuilder {
         let topic = self.topic.as_ref().unwrap();
         self.r#type = Some(EnumAttributeServer::r#type());
         let (cmd_receiver, att_publisher) = self.common_ops(50).await;
-        let att = EnumAttributeServer::new(topic.clone(), cmd_receiver, att_publisher, choices);
+        let att = EnumAttributeServer::new(
+            topic.clone(),
+            cmd_receiver,
+            att_publisher,
+            choices.into_iter().map(Into::into).collect(),
+        );
         Ok(att)
     }
 
