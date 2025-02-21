@@ -77,7 +77,7 @@ impl BooleanAttributeServer {
     ///
     ///
     pub fn r#type() -> String {
-        "boolean".to_string()
+        "Boolean".to_string()
     }
 
     ///
