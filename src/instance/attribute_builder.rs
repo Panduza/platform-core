@@ -1,6 +1,7 @@
 use super::server::boolean::BooleanAttributeServer;
 use super::server::json::JsonAttributeServer;
 use super::server::r#enum::EnumAttributeServer;
+use super::server::sample::SampleAttributeServer;
 use super::server::si::SiAttributeServer;
 use super::server::string::StringAttributeServer;
 use crate::instance::class::Class;
@@ -156,7 +157,7 @@ impl AttributeServerBuilder {
         (cmd_receiver, att_publisher)
     }
 
-    ///
+    /// BOOLEAN
     ///
     pub async fn start_as_boolean(mut self) -> Result<BooleanAttributeServer, Error> {
         let topic = self.topic.as_ref().unwrap();
@@ -166,7 +167,7 @@ impl AttributeServerBuilder {
         Ok(att)
     }
 
-    ///
+    /// ENUM
     ///
     pub async fn start_as_enum<S: Into<String>>(
         mut self,
@@ -181,6 +182,16 @@ impl AttributeServerBuilder {
             att_publisher,
             choices.into_iter().map(Into::into).collect(),
         );
+        Ok(att)
+    }
+
+    /// SAMPLE
+    ///
+    pub async fn start_as_sample(mut self) -> Result<SampleAttributeServer, Error> {
+        let topic = self.topic.as_ref().unwrap();
+        self.r#type = Some(SampleAttributeServer::r#type());
+        let (cmd_receiver, att_publisher) = self.common_ops(50).await;
+        let att = SampleAttributeServer::new(topic.clone(), cmd_receiver, att_publisher);
         Ok(att)
     }
 

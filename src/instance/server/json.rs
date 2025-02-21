@@ -74,7 +74,7 @@ impl JsonAttributeServer {
     ///
     ///
     pub fn r#type() -> String {
-        "Json".to_string()
+        "json".to_string()
     }
 
     ///

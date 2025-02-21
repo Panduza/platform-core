@@ -1,19 +1,14 @@
 [package]
 name = "panduza-platform-core"
 edition = "2021"
-version = "0.2.3"
+version = "0.3.0"
 readme = "README.md"
 
 # =========================================================
 [dependencies]
 
 # Panduza Rust Client
-# panduza = { path = "C:/Users/rodriguez.NET/Documents/workspace/50-PROJET/XX-XXXX-PZA/panduza-rust" }
-# panduza = { path = "C:/Users/xavie/workspace/panduza-rust" }
-# panduza = { path = "C:/Users/xavie/workspace/panduza-rust" }
-panduza = { git = "https://github.com/Panduza/panduza-rust", branch = "rework" }
-
-
+panduza = { git = "https://github.com/Panduza/panduza-rust", tag = "0.0.0" }
 # Main async framework for the platform
 tokio = { version = "1.43.0", features = ["full", "tracing"] }
 # Async trait support
