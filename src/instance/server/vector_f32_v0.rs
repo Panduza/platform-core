@@ -9,7 +9,7 @@ use tokio::sync::mpsc::Receiver;
 use tokio::sync::Notify;
 
 #[derive(Default, Debug)]
-struct SampleDataPack {
+struct VectorF32DataPack {
     /// Queue of value (need to be poped)
     ///
     queue: Vec<VectorF32Buffer>,
@@ -19,7 +19,7 @@ struct SampleDataPack {
     update_notifier: Arc<Notify>,
 }
 
-impl SampleDataPack {
+impl VectorF32DataPack {
     ///
     ///
     pub fn push(&mut self, v: VectorF32Buffer) {
@@ -46,7 +46,7 @@ impl SampleDataPack {
 ///
 ///
 #[derive(Clone)]
-pub struct SampleAttributeServer {
+pub struct VectorF32AttributeServer {
     /// Local logger
     ///
     logger: Logger,
@@ -57,14 +57,14 @@ pub struct SampleAttributeServer {
 
     /// Inner server implementation
     ///
-    pack: Arc<Mutex<SampleDataPack>>,
+    pack: Arc<Mutex<VectorF32DataPack>>,
 
     ///
     ///
     update_notifier: Arc<Notify>,
 }
 
-impl SampleAttributeServer {
+impl VectorF32AttributeServer {
     /// Logger getter
     ///
     pub fn logger(&self) -> &Logger {
@@ -82,7 +82,7 @@ impl SampleAttributeServer {
     pub fn new(topic: String, mut cmd_receiver: Receiver<Bytes>, att_publisher: Publisher) -> Self {
         //
         //
-        let pack = Arc::new(Mutex::new(SampleDataPack::default()));
+        let pack = Arc::new(Mutex::new(VectorF32DataPack::default()));
 
         //
         // Subscribe then check for incomming messages

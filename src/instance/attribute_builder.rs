@@ -4,6 +4,8 @@ use super::server::r#enum::EnumAttributeServer;
 use super::server::sample::SampleAttributeServer;
 use super::server::si::SiAttributeServer;
 use super::server::string::StringAttributeServer;
+use super::server::trigger_v0::TriggerAttributeServer;
+use super::server::vector_f32_v0::VectorF32AttributeServer;
 use crate::instance::class::Class;
 use crate::runtime::notification::attribute::AttributeMode;
 use crate::AttributeNotification;
@@ -192,6 +194,26 @@ impl AttributeServerBuilder {
         self.r#type = Some(SampleAttributeServer::r#type());
         let (cmd_receiver, att_publisher) = self.common_ops(50).await;
         let att = SampleAttributeServer::new(topic.clone(), cmd_receiver, att_publisher);
+        Ok(att)
+    }
+
+    /// TRIGGER
+    ///
+    pub async fn start_as_trigger(mut self) -> Result<TriggerAttributeServer, Error> {
+        let topic = self.topic.as_ref().unwrap();
+        self.r#type = Some(TriggerAttributeServer::r#type());
+        let (cmd_receiver, att_publisher) = self.common_ops(50).await;
+        let att = TriggerAttributeServer::new(topic.clone(), cmd_receiver, att_publisher);
+        Ok(att)
+    }
+
+    /// VECTOR_F32
+    ///
+    pub async fn start_as_vector_f32(mut self) -> Result<VectorF32AttributeServer, Error> {
+        let topic = self.topic.as_ref().unwrap();
+        self.r#type = Some(VectorF32AttributeServer::r#type());
+        let (cmd_receiver, att_publisher) = self.common_ops(50).await;
+        let att = VectorF32AttributeServer::new(topic.clone(), cmd_receiver, att_publisher);
         Ok(att)
     }
 
