@@ -125,7 +125,7 @@ pub mod env;
 /// - usb => for usb drivers (also enable usb)
 /// - serial => for serial drivers (also enable usb)
 ///
-// pub mod connector;
+pub mod interface;
 
 /// Currently we put here a trait waiting to see if there is a better use later
 ///
