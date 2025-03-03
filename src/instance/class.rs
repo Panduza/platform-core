@@ -1,10 +1,7 @@
 use super::attribute_builder::AttributeServerBuilder;
-// use super::element::Element;
 use super::{class_builder::ClassBuilder, Container};
 use crate::{Error, Instance, Logger, Notification};
 use async_trait::async_trait;
-use futures::lock::Mutex;
-use std::future::Future;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use tokio::sync::mpsc::Sender;

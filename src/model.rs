@@ -12,3 +12,6 @@ pub trait BooleanAccessorModel: Sync + Send {
     ///
     async fn set_boolean_at(&mut self, index: usize, value: bool) -> Result<(), Error>;
 }
+
+// acquisitor -> data ro + trigger
+// one or multiple vector of f32

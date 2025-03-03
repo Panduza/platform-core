@@ -73,6 +73,10 @@ pub struct Instance {
     ///
     topic: String,
 
+    ///
+    ///
+    settings: Option<InstanceSettings>,
+
     /// Operations of the devices
     ///
     actions: Arc<Mutex<Box<dyn Actions>>>,
@@ -107,12 +111,8 @@ impl Instance {
         Instance {
             logger: Logger::new_for_instance(name.clone()),
             engine: engine.clone(),
-            // info_pack: info_pack,
-            // info_dyn_dev_status: None,
-            // r_notifier: r_notifier,
-            // inner: InstanceInner::new(reactor.clone(), settings).into(),
-            // inner_operations: Arc::new(Mutex::new(operations)),
             topic: format!("{}/{}", engine.root_topic(), name),
+            settings: settings,
             actions: Arc::new(Mutex::new(actions)),
             state: Arc::new(Mutex::new(State::Booting)),
             state_change_notifier: Arc::new(Notify::new()),
@@ -203,12 +203,11 @@ impl Instance {
         // Ok(())
     }
 
-    // ///
-    // /// Clone settings of the device
-    // ///
-    // pub async fn settings(&self) -> Option<InstanceSettings> {
-    //     self.inner.lock().await.settings.clone()
-    // }
+    /// Clone settings of the device
+    ///
+    pub async fn settings(&self) -> Option<InstanceSettings> {
+        self.settings.clone()
+    }
 
     pub fn name(&self) -> String {
         match self.topic.split('/').last() {
