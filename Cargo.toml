@@ -58,7 +58,7 @@ colored = "3.0.0"
 #
 # Usb driver library
 # 
-nusb = "0.1.12"
+nusb = { version = "0.1.12", optional = true }
 
 # === feature => serial
 # 
@@ -82,13 +82,8 @@ serial-line-ip = { version = "0.5.0", optional = true }
 
 # Build usb drivers
 # 
-usb = []
+usb = ["nusb"]
 
 # Build serial drivers
 # 
 serial = ["tokio-serial", "serial2-tokio", "serial-line-ip", "usb"]
-
-# Display perf mesurement on log info
-# Allow perf measurement when the code is built in release
-# 
-measure = []

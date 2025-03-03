@@ -93,16 +93,6 @@ pub use runtime::RuntimeBuilder;
 pub mod topic;
 pub use topic::Topic;
 
-// pub use instance::class::Class;
-// pub use instance::class_builder::ClassBuilder;
-// pub use instance::container::Container;
-// pub use instance::monitor::InstanceMonitor;
-// pub use instance::Instance;
-// pub use instance::InstanceInner;
-
-/// Return type for spawned task
-pub type TaskResult = Result<(), Error>;
-
 ///
 ///
 pub mod env;
@@ -132,9 +122,21 @@ pub mod interface;
 pub mod protocol;
 
 ///
+///
+pub mod codec;
+
+///
+///
+pub mod model;
+
+///
 /// TODO => put in factory
 ///
 pub mod props;
 pub use props::Prop;
 pub use props::PropType;
 pub use props::Props;
+
+///
+///
+pub mod std;

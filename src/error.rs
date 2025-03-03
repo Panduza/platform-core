@@ -38,6 +38,10 @@ pub enum Error {
 
     #[error("Driver operation failure")]
     DriverError(String),
+
+    #[error("Error codec runtime")]
+    CodecError(String),
+
     #[error("We just don't know what happened")]
     Wtf,
 }
