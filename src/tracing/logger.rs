@@ -186,21 +186,6 @@ impl Logger {
 // ----------------------------------------------------------------------------
 // ----------------------------------------------------------------------------
 
-#[derive(Clone)]
-pub struct FactoryLogger {
-    base: Logger,
-}
-impl FactoryLogger {
-    pub fn new() -> FactoryLogger {
-        FactoryLogger {
-            base: Logger::new("Factory", "", "", ""),
-        }
-    }
-    pub fn info<A: Into<String>>(&self, text: A) {
-        self.base.info(text);
-    }
-}
-
 #[macro_export]
 macro_rules! log_error {
     ($logger:expr , $($arg:tt)*) => {

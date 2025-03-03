@@ -1,6 +1,6 @@
 use super::Settings as UsbSettings;
 // use crate::protocol::BinaryCmdRespProtocol;
-use crate::std::class::repl::ReplProtocol;
+// use crate::std::class::repl::ReplProtocol;
 use crate::{format_driver_error, log_trace, log_warn, Error, Logger};
 use async_trait::async_trait;
 use byteorder::{ByteOrder, LittleEndian};
@@ -442,26 +442,26 @@ impl Driver {
     }
 }
 
-#[async_trait]
-impl ReplProtocol for Driver {
-    /// Send a command and return the response as a string
-    ///
-    async fn eval(&mut self, command: String) -> Result<String, Error> {
-        // Log
-        log_trace!(self.logger, "Eval: {:?}", command);
+// #[async_trait]
+// impl ReplProtocol for Driver {
+//     /// Send a command and return the response as a string
+//     ///
+//     async fn eval(&mut self, command: String) -> Result<String, Error> {
+//         // Log
+//         log_trace!(self.logger, "Eval: {:?}", command);
 
-        // Execute command
-        let mut response = Vec::new();
-        self.execute_command(command.as_bytes(), &mut response)
-            .await?;
+//         // Execute command
+//         let mut response = Vec::new();
+//         self.execute_command(command.as_bytes(), &mut response)
+//             .await?;
 
-        // Prepare
-        match String::from_utf8(response) {
-            Ok(s) => Ok(s),
-            Err(_) => Ok("Cannot convert the payload into string".to_string()),
-        }
-    }
-}
+//         // Prepare
+//         match String::from_utf8(response) {
+//             Ok(s) => Ok(s),
+//             Err(_) => Ok("Cannot convert the payload into string".to_string()),
+//         }
+//     }
+// }
 
 // #[async_trait]
 // ///

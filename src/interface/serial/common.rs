@@ -1,13 +1,13 @@
 use super::Settings as SerialSettings;
 use crate::format_driver_error;
 use crate::log_debug;
-use crate::{DriverLogger, Error};
+use crate::{Error, Logger};
 use serial2_tokio::SerialPort;
 use serial2_tokio::Settings;
 
 /// Create a new instance of the driver
 ///
-pub fn open(settings: &SerialSettings) -> Result<(DriverLogger, SerialPort), Error> {
+pub fn open(settings: &SerialSettings) -> Result<(Logger, SerialPort), Error> {
     //
     // Get the port name safely
     let port_name = settings
@@ -19,7 +19,7 @@ pub fn open(settings: &SerialSettings) -> Result<(DriverLogger, SerialPort), Err
 
     //
     // Prepare logger
-    let logger = DriverLogger::new("serial", "generic", &port_name);
+    let logger = Logger::new("serial", "generic", &port_name, "");
     log_debug!(logger, "Opening serial driver {:?}...", &port_name);
 
     //

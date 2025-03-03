@@ -1,6 +1,6 @@
 use super::{common, Settings as SerialSettings};
 use crate::protocol::AsciiCmdRespProtocol;
-use crate::{format_driver_error, log_debug, log_trace, DriverLogger, Error};
+use crate::{format_driver_error, log_debug, log_trace, Error, Logger};
 use async_trait::async_trait;
 use serial2_tokio::SerialPort;
 use std::time::Duration;
@@ -22,7 +22,7 @@ pub struct Driver {
     ///
     /// To help data logging inside the driver
     ///
-    logger: DriverLogger,
+    logger: Logger,
     ///
     /// The serial port object
     ///

@@ -1,10 +1,10 @@
 use super::Settings as SerialSettings;
-use crate::connector::serial::common;
 use crate::format_driver_error;
+use crate::interface::serial::common;
 use crate::log_debug;
 use crate::log_trace;
-use crate::DriverLogger;
 use crate::Error;
+use crate::Logger;
 use serial2_tokio::SerialPort;
 use std::sync::Arc;
 use std::time::Duration;
@@ -35,7 +35,7 @@ pub struct Driver {
     ///
     ///
     ///
-    pub logger: DriverLogger,
+    pub logger: Logger,
     ///
     ///
     ///
