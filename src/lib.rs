@@ -139,4 +139,4 @@ pub use props::Props;
 
 ///
 ///
-pub mod std;
+pub mod template;
