@@ -16,6 +16,18 @@ pub trait BooleanAccessorModel: Sync + Send {
 #[async_trait]
 ///
 ///
+pub trait StringAccessorModel: Sync + Send {
+    ///
+    ///
+    async fn get_string_at(&mut self, index: usize) -> Result<String, Error>;
+    ///
+    ///
+    async fn set_string_at(&mut self, index: usize, value: String) -> Result<(), Error>;
+}
+
+#[async_trait]
+///
+///
 pub trait VectorF32AccessorModel: Sync + Send {
     ///
     ///

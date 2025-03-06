@@ -1,4 +1,4 @@
-use super::Settings as UsbSettings;
+use super::UsbSettings;
 // use crate::protocol::BinaryCmdRespProtocol;
 // use crate::std::class::repl::ReplProtocol;
 use crate::{
