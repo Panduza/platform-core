@@ -1,14 +1,17 @@
-use super::{common, Settings as SerialSettings};
-use crate::protocol::AsciiCmdRespProtocol;
+use super::{common, SerialSettings};
+use crate::protocol::BytesDialogProtocol;
 use crate::{format_driver_error, log_debug, log_trace, Error, Logger};
 use async_trait::async_trait;
+use bytes::Bytes;
 use serial2_tokio::SerialPort;
+use std::sync::Arc;
 use std::time::Duration;
+use tokio::sync::Mutex;
 use tokio::time::timeout;
 
 ///
 ///
-pub struct Driver {
+pub struct SerialEolInterface {
     ///
     /// To help data logging inside the driver
     ///
@@ -31,7 +34,7 @@ pub struct Driver {
     read_buffer: [u8; 1024],
 }
 
-impl Driver {
+impl SerialEolInterface {
     /// Create a new instance of the driver
     ///
     pub fn open(settings: &SerialSettings, eol: Vec<u8>) -> Result<Self, Error> {
@@ -50,6 +53,12 @@ impl Driver {
             read_timeout: settings.read_timeout,
             read_buffer: [0; 1024],
         })
+    }
+
+    ///
+    ///
+    pub fn into_arc_mutex(self) -> Arc<Mutex<Self>> {
+        Arc::new(Mutex::new(self))
     }
 
     ///
@@ -98,14 +107,16 @@ impl Driver {
 }
 
 #[async_trait]
-impl AsciiCmdRespProtocol for Driver {
+///
+///
+impl BytesDialogProtocol for SerialEolInterface {
     ///
+    /// Just send a command and does not expect any response
     ///
-    ///
-    async fn send(&mut self, command: &String) -> Result<(), Error> {
+    async fn tell(&mut self, command: Bytes) -> Result<(), Error> {
         //
         // Append EOL to the command
-        let mut command_buffer = command.clone().into_bytes();
+        let mut command_buffer = command.to_vec();
         command_buffer.extend(&self.eol);
 
         //
@@ -119,12 +130,12 @@ impl AsciiCmdRespProtocol for Driver {
     }
 
     ///
+    /// Send a command, wait for response and return it
     ///
-    ///
-    async fn ask(&mut self, command: &String) -> Result<String, Error> {
+    async fn ask(&mut self, command: Bytes) -> Result<Bytes, Error> {
         //
         // Append EOL to the command
-        let mut command_buffer = command.clone().into_bytes();
+        let mut command_buffer = command.to_vec();
         command_buffer.extend(&self.eol);
 
         // trace
@@ -143,10 +154,44 @@ impl AsciiCmdRespProtocol for Driver {
 
         //
         // Build response string
-        unsafe {
-            let string_slice =
-                String::from_utf8_unchecked(self.read_buffer[..count - self.eol.len()].to_vec());
-            return Ok(string_slice.to_string());
-        }
+        let response_slice = self.read_buffer[..count - self.eol.len()].to_vec();
+        Ok(Bytes::from(response_slice))
+        // String::from_utf8_unchecked(
     }
 }
+
+// #[async_trait]
+// impl AsciiCmdRespProtocol for Driver {
+
+//     ///
+//     ///
+//     ///
+//     async fn ask(&mut self, command: &String) -> Result<String, Error> {
+//         //
+//         // Append EOL to the command
+//         let mut command_buffer = command.clone().into_bytes();
+//         command_buffer.extend(&self.eol);
+
+//         // trace
+//         log_trace!(self.logger, "write {:?}", command_buffer);
+
+//         //
+//         // Write
+//         self.port
+//             .write(command_buffer.as_slice())
+//             .await
+//             .map_err(|e| format_driver_error!("Unable to write on serial port: {}", e))?;
+
+//         //
+//         // Read
+//         let count = self.read_until_timeout().await?;
+
+//         //
+//         // Build response string
+//         unsafe {
+//             let string_slice =
+//                 String::from_utf8_unchecked(self.read_buffer[..count - self.eol.len()].to_vec());
+//             return Ok(string_slice.to_string());
+//         }
+//     }
+// }

@@ -28,6 +28,18 @@ pub trait StringAccessorModel: Sync + Send {
 #[async_trait]
 ///
 ///
+pub trait NumberAccessorModel: Sync + Send {
+    ///
+    ///
+    async fn get_number_at(&mut self, index: usize) -> Result<f32, Error>;
+    ///
+    ///
+    async fn set_number_at(&mut self, index: usize, value: f32) -> Result<(), Error>;
+}
+
+#[async_trait]
+///
+///
 pub trait VectorF32AccessorModel: Sync + Send {
     ///
     ///

@@ -1,4 +1,4 @@
-use super::{common, Settings as SerialSettings};
+use super::{common, SerialSettings};
 use crate::protocol::AsciiCmdRespProtocol;
 use crate::{format_driver_error, log_debug, log_trace, Error, Logger};
 use async_trait::async_trait;

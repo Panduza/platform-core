@@ -1,22 +1,9 @@
-use crate::{
-    log_debug, log_debug_mount_end, log_debug_mount_start, spawn_on_command, Container, SiAttServer,
-};
-use crate::{Error, StableNumber};
+use crate::model::NumberAccessorModel;
+use crate::Error;
+use crate::{log_debug, log_debug_mount_end, log_debug_mount_start, Container};
 use async_trait::async_trait;
 use std::sync::Arc;
 use tokio::sync::Mutex;
-
-#[async_trait]
-///
-///
-pub trait NumberAccessorModel: Sync + Send {
-    ///
-    ///
-    async fn get_number_at(&mut self, index: usize) -> Result<StableNumber, Error>;
-    ///
-    ///
-    async fn set_number_at(&mut self, index: usize, value: &StableNumber) -> Result<(), Error>;
-}
 
 /// Mount the identity attribute in parent container
 ///
@@ -28,7 +15,7 @@ pub async fn mount<
     U: Into<String>,
 >(
     mut parent: C,
-    interface: Arc<Mutex<I>>,
+    mut interface: I,
     index: usize,
     name: N,
     info: F,
@@ -43,7 +30,7 @@ pub async fn mount<
         .create_attribute(name)
         .with_rw()
         .with_info(info)
-        .finish_as_si(unit, min, max, decimals)
+        .start_as_si(unit, min, max, decimals)
         .await?;
 
     //
@@ -53,18 +40,18 @@ pub async fn mount<
 
     //
     // Just init
-    let value = interface.lock().await.get_number_at(index).await?;
+    let value = interface.get_number_at(index).await?;
     log_debug!(logger, "Initial value ({:?})", &value);
-    att_number_rw.set(&value).await?;
+    // att_number_rw.set(&value).await?;
 
-    //
-    let att_number_rw_2 = att_number_rw.clone();
-    spawn_on_command!(
-        "on_command => boolean",
-        parent,
-        att_number_rw_2,
-        on_command(att_number_rw_2.clone(), interface.clone(), index)
-    );
+    // //
+    // let att_number_rw_2 = att_number_rw.clone();
+    // spawn_on_command!(
+    //     "on_command => boolean",
+    //     parent,
+    //     att_number_rw_2,
+    //     on_command(att_number_rw_2.clone(), interface.clone(), index)
+    // );
 
     //
     // End
@@ -72,30 +59,30 @@ pub async fn mount<
     Ok(())
 }
 
-///
-///
-async fn on_command<I: NumberAccessorModel + 'static>(
-    mut att: SiAttServer,
-    interface: Arc<Mutex<I>>,
-    index: usize,
-) -> Result<(), Error> {
-    while let Some(command) = att.pop_cmd().await {
-        //
-        // Log
-        log_debug!(att.logger(), "command received '{:?}'", command);
+// ///
+// ///
+// async fn on_command<I: NumberAccessorModel + 'static>(
+//     mut att: SiAttServer,
+//     interface: Arc<Mutex<I>>,
+//     index: usize,
+// ) -> Result<(), Error> {
+//     while let Some(command) = att.pop_cmd().await {
+//         //
+//         // Log
+//         log_debug!(att.logger(), "command received '{:?}'", command);
 
-        //
-        //
-        interface
-            .lock()
-            .await
-            .set_number_at(index, &command)
-            .await?;
+//         //
+//         //
+//         interface
+//             .lock()
+//             .await
+//             .set_number_at(index, &command)
+//             .await?;
 
-        //
-        // Read back
-        let read_back_value = interface.lock().await.get_number_at(index).await?;
-        att.set(&read_back_value).await?;
-    }
-    Ok(())
-}
+//         //
+//         // Read back
+//         let read_back_value = interface.get_number_at(index).await?;
+//         att.set(&read_back_value).await?;
+//     }
+//     Ok(())
+// }

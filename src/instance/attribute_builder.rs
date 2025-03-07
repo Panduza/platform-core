@@ -263,31 +263,11 @@ impl AttributeServerBuilder {
         max: f64,
         decimals: usize,
     ) -> Result<SiAttributeServer, Error> {
-        //
-        //
+        let topic = self.topic.as_ref().unwrap();
         self.r#type = Some(SiAttributeServer::r#type());
-
-        //
-        //
-        self.send_creation_notification().await;
-
-        let topic = self.topic.unwrap();
-
-        let cmd_receiver: tokio::sync::mpsc::Receiver<bytes::Bytes> = self
-            .engine
-            .register_listener(format!("{}/cmd", topic), 50)
-            .await
-            .unwrap();
-
-        let att_publisher = self
-            .engine
-            .register_publisher(format!("{}/att", topic), true)
-            .unwrap();
-
-        //
-        //
+        let (cmd_receiver, att_publisher) = self.common_ops(50).await;
         let att = SiAttributeServer::new(
-            topic,
+            topic.clone(),
             cmd_receiver,
             att_publisher,
             unit.into(),
@@ -295,13 +275,6 @@ impl AttributeServerBuilder {
             max,
             decimals,
         );
-
-        // //
-        // // Attach the attribute to its parent class if exist
-        // if let Some(mut parent_class) = self.parent_class {
-        //     parent_class.push_sub_element(att.clone_as_element()).await;
-        // }
-
         Ok(att)
     }
 

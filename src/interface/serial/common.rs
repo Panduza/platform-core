@@ -1,4 +1,4 @@
-use super::Settings as SerialSettings;
+use super::SerialSettings;
 use crate::format_driver_error;
 use crate::log_debug;
 use crate::{Error, Logger};
