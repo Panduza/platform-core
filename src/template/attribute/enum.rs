@@ -1,32 +1,18 @@
-use crate::{log_debug, log_debug_mount_end, log_debug_mount_start, spawn_on_command, Container};
-use crate::{EnumAttServer, Error};
-use async_trait::async_trait;
-use std::sync::Arc;
-use tokio::sync::Mutex;
-
-#[async_trait]
-///
-///
-pub trait StringAccessorModel: Sync + Send {
-    ///
-    ///
-    async fn get_string_at(&mut self, index: usize) -> Result<String, Error>;
-    ///
-    ///
-    async fn set_string_at(&mut self, index: usize, value: &String) -> Result<(), Error>;
-}
+use crate::model::StringAccessorModel;
+use crate::Error;
+use crate::{log_debug, log_debug_mount_end, log_debug_mount_start, Container};
 
 /// Mount the identity attribute in parent container
 ///
 pub async fn mount<
     C: Container,
-    I: StringAccessorModel + 'static,
+    I: StringAccessorModel + Clone + 'static,
     N: Into<String>,
     F: Into<String>,
     S: Into<String>,
 >(
     mut parent: C,
-    interface: Arc<Mutex<I>>,
+    mut interface: I,
     index: usize,
     name: N,
     info: F,
@@ -38,7 +24,7 @@ pub async fn mount<
         .create_attribute(name)
         .with_rw()
         .with_info(info)
-        .finish_as_enum(choices)
+        .start_as_enum(choices)
         .await?;
 
     //
@@ -48,18 +34,18 @@ pub async fn mount<
 
     //
     // Just init
-    let value = interface.lock().await.get_string_at(index).await?;
+    let value = interface.get_string_at(index).await?;
     log_debug!(logger, "Initial value ({:?})", &value);
     att_boolean_rw.set(value).await?;
 
-    //
-    let att_boolean_rw_2 = att_boolean_rw.clone();
-    spawn_on_command!(
-        "on_command => boolean",
-        parent,
-        att_boolean_rw_2,
-        on_command(att_boolean_rw_2.clone(), interface.clone(), index)
-    );
+    // //
+    // let att_boolean_rw_2 = att_boolean_rw.clone();
+    // spawn_on_command!(
+    //     "on_command => boolean",
+    //     parent,
+    //     att_boolean_rw_2,
+    //     on_command(att_boolean_rw_2.clone(), interface.clone(), index)
+    // );
 
     //
     // End
@@ -67,31 +53,31 @@ pub async fn mount<
     Ok(())
 }
 
-///
-///
-async fn on_command<I: StringAccessorModel + 'static>(
-    mut att: EnumAttServer,
-    interface: Arc<Mutex<I>>,
-    index: usize,
-) -> Result<(), Error> {
-    while let Some(command) = att.pop_cmd().await {
-        //
-        // Log
-        log_debug!(att.logger(), "command received '{:?}'", command);
+// ///
+// ///
+// async fn on_command<I: StringAccessorModel + 'static>(
+//     mut att: EnumAttServer,
+//     interface: Arc<Mutex<I>>,
+//     index: usize,
+// ) -> Result<(), Error> {
+//     while let Some(command) = att.pop_cmd().await {
+//         //
+//         // Log
+//         log_debug!(att.logger(), "command received '{:?}'", command);
 
-        match command {
-            Ok(v) => {
-                //
-                //
-                interface.lock().await.set_string_at(index, &v).await?;
+//         match command {
+//             Ok(v) => {
+//                 //
+//                 //
+//                 interface.lock().await.set_string_at(index, &v).await?;
 
-                //
-                // Read back
-                let read_back_value = interface.lock().await.get_string_at(index).await?;
-                att.set(read_back_value).await?;
-            }
-            Err(_) => {}
-        }
-    }
-    Ok(())
-}
+//                 //
+//                 // Read back
+//                 let read_back_value = interface.lock().await.get_string_at(index).await?;
+//                 att.set(read_back_value).await?;
+//             }
+//             Err(_) => {}
+//         }
+//     }
+//     Ok(())
+// }

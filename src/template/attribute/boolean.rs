@@ -8,12 +8,12 @@ use tokio::sync::Mutex;
 ///
 pub async fn mount<
     C: Container,
-    I: BooleanAccessorModel + 'static,
+    I: BooleanAccessorModel + Clone + 'static,
     N: Into<String>,
     F: Into<String>,
 >(
     mut parent: C,
-    interface: Arc<Mutex<I>>,
+    mut interface: I,
     index: usize,
     name: N,
     info: F,
@@ -34,7 +34,7 @@ pub async fn mount<
 
     //
     // Just init
-    let value = interface.lock().await.get_boolean_at(index).await?;
+    let value = interface.get_boolean_at(index).await?;
     log_debug!(logger, "Initial value ({:?})", &value);
     att.set(value).await?;
 
@@ -48,16 +48,11 @@ pub async fn mount<
 
                 //
                 //
-                interface
-                    .lock()
-                    .await
-                    .set_boolean_at(index, command)
-                    .await
-                    .unwrap();
+                interface.set_boolean_at(index, command).await.unwrap();
 
                 //
                 // Read back
-                let read_back_value = interface.lock().await.get_boolean_at(index).await.unwrap();
+                let read_back_value = interface.get_boolean_at(index).await.unwrap();
                 att.set(read_back_value).await.unwrap();
             }
         }
