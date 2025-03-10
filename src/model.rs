@@ -4,6 +4,15 @@ use async_trait::async_trait;
 #[async_trait]
 ///
 ///
+pub trait TriggerAccessorModel: Sync + Send {
+    ///
+    ///
+    async fn trigger_at(&mut self, index: usize) -> Result<(), Error>;
+}
+
+#[async_trait]
+///
+///
 pub trait BooleanAccessorModel: Sync + Send {
     ///
     ///
