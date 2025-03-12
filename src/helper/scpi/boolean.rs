@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::Error;
 use bytes::Bytes;
 
@@ -37,6 +39,30 @@ impl ScpiBoolean {
     pub fn from_slice(s: &[u8]) -> Result<Self, Error> {
         match std::str::from_utf8(s) {
             Ok(r) => Self::from_str_case_insensitive(r),
+            Err(e) => Err(Error::CodecError(format!(
+                "Invalid utf8 decoding: {:?} / {:?}",
+                e, s
+            ))),
+        }
+    }
+
+    ///
+    ///
+    pub fn from_bytes_and_map(s: Bytes, map: HashMap<&str, bool>) -> Result<Self, Error> {
+        match std::str::from_utf8(&s) {
+            Ok(r) => {
+                match map.get(r) {
+                    Some(value) => Ok(Self::new(*value)),
+                    None => return Err(Error::CodecError(format!("value not mapped '{}'", r))),
+                }
+                // if r == true_str {
+                //     return Ok(Self::new(true));
+                // } else if r == false_str {
+                //     return Ok(Self::new(false));
+                // } else {
+                //     return Err(Error::CodecError(format!("value not mapped '{}'", r)));
+                // }
+            }
             Err(e) => Err(Error::CodecError(format!(
                 "Invalid utf8 decoding: {:?} / {:?}",
                 e, s

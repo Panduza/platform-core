@@ -61,15 +61,15 @@ impl Settings {
 
     /// Set the vendor
     ///
-    pub fn set_vendor(mut self, vendor: u16) -> Self {
-        self.vid = Some(vendor);
+    pub fn set_vid(mut self, vid: u16) -> Self {
+        self.vid = Some(vid);
         self
     }
 
     /// Set the model
     ///
-    pub fn set_model(mut self, model: u16) -> Self {
-        self.pid = Some(model);
+    pub fn set_pid(mut self, pid: u16) -> Self {
+        self.pid = Some(pid);
         self
     }
 
