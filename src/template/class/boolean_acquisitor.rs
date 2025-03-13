@@ -6,6 +6,23 @@ use async_trait::async_trait;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
+use super::trigger::Triggerable;
+
+#[derive(Clone)]
+struct TriggerWrap<I: BooleanAccessorModel> {
+    interface: I,
+    index: usize,
+}
+
+#[async_trait]
+impl<I: BooleanAccessorModel> Triggerable for TriggerWrap<I> {
+    async fn on_trigger(&mut self) -> Result<(), Error> {
+        let value = self.interface.get_boolean_at(self.index).await?;
+        // self.att.set_from_f32(value as f32).await?;
+        Ok(())
+    }
+}
+
 ///
 ///
 pub async fn mount<A: Into<String>, C: Container, I: BooleanAccessorModel + Clone + 'static>(
@@ -32,21 +49,17 @@ pub async fn mount<A: Into<String>, C: Container, I: BooleanAccessorModel + Clon
         .start_as_boolean()
         .await?;
 
-    // //
-    // //
-    // let tttt = TriggerableSi {
-    //     channel: 0,
-    //     att: att_data.clone(),
-    //     interface: interface.clone(),
-    // };
+    //
+    //
+    let trigger_interface = TriggerWrap {
+        // channel: 0,
+        // att: att_data.clone(),
+        interface: interface.clone(),
+        index: index,
+    };
+    trigger::mount(top_class, trigger_interface).await?;
 
-    // trigger::mount(top_class, Arc::new(Mutex::new(tttt))).await?;
-
-    // data
-    // class trigger
-    //    single
-    //    cyclic
-
+    //
     log_debug_mount_end!(logger);
     Ok(())
 }

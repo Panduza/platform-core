@@ -20,7 +20,7 @@ pub trait Triggerable: Sync + Send {
 
 ///
 ///
-pub async fn mount<C: Container, I: BooleanAccessorModel + Clone + 'static>(
+pub async fn mount<C: Container, I: Triggerable + Clone + 'static>(
     mut parent: C,
     mut interface: I,
 ) -> Result<(), Error> {
@@ -36,7 +36,7 @@ pub async fn mount<C: Container, I: BooleanAccessorModel + Clone + 'static>(
 
     //
     //
-    let att_single = class_trigger
+    let mut att_single = class_trigger
         .create_attribute("single")
         .with_wo()
         .start_as_boolean()
@@ -44,14 +44,14 @@ pub async fn mount<C: Container, I: BooleanAccessorModel + Clone + 'static>(
 
     //
     // Execute action on each command received
-    // let triggered_3 = triggered.clone();
-    // let att_single_2 = att_single.clone();
-    // spawn_on_command!(
-    //     "on_command => trigger/single",
-    //     parent,
-    //     att_single,
-    //     on_single_command(att_single_2.clone(), triggered_3.clone())
-    // );
+    tokio::spawn(async move {
+        loop {
+            att_single.wait_for_commands().await;
+            while let Some(command) = att_single.pop().await {
+                interface.on_trigger().await.unwrap();
+            }
+        }
+    });
 
     //
     //
@@ -74,6 +74,7 @@ pub async fn mount<C: Container, I: BooleanAccessorModel + Clone + 'static>(
     // let att_cyclic_logger = att_cyclic.logger().clone();
     // let att_cyclic_2 = att_cyclic.clone();
     // let cycle_changed_2 = cycle_changed.clone();
+
     // spawn_on_command!(
     //     "on_command => trigger/cyclic",
     //     parent,
