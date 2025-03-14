@@ -4,6 +4,7 @@ use crate::{format_driver_error, log_debug, log_trace, Error, Logger};
 use async_trait::async_trait;
 use bytes::Bytes;
 use serial2_tokio::SerialPort;
+use std::str;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::Mutex;
@@ -115,6 +116,26 @@ impl BytesDialogProtocol for SerialEolInterface {
     ///
     async fn tell(&mut self, command: Bytes) -> Result<(), Error> {
         //
+        // For trace ONLY
+        {
+            let debug_conversion = str::from_utf8(&command);
+            if let Ok(str_data) = debug_conversion {
+                log_trace!(
+                    self.logger,
+                    "SerialEolInterface::tell({:?} - {:?})",
+                    str_data,
+                    &command.to_vec()
+                );
+            } else {
+                log_trace!(
+                    self.logger,
+                    "SerialEolInterface::tell({:?})",
+                    &command.to_vec()
+                );
+            }
+        }
+
+        //
         // Append EOL to the command
         let mut command_buffer = command.to_vec();
         command_buffer.extend(&self.eol);
@@ -138,8 +159,25 @@ impl BytesDialogProtocol for SerialEolInterface {
         let mut command_buffer = command.to_vec();
         command_buffer.extend(&self.eol);
 
-        // trace
-        log_trace!(self.logger, "write {:?}", command_buffer);
+        //
+        // TRACE
+        {
+            let debug_conversion = str::from_utf8(&command);
+            if let Ok(str_data) = debug_conversion {
+                log_trace!(
+                    self.logger,
+                    "SerialEolInterface::ask/query({:?} - {:?})",
+                    str_data,
+                    &command_buffer
+                );
+            } else {
+                log_trace!(
+                    self.logger,
+                    "SerialEolInterface::ask/query({:?})",
+                    &command_buffer
+                );
+            }
+        }
 
         //
         // Write
@@ -155,43 +193,21 @@ impl BytesDialogProtocol for SerialEolInterface {
         //
         // Build response string
         let response_slice = self.read_buffer[..count - self.eol.len()].to_vec();
+
+        //
+        // TRACE
+        {
+            let debug_conversion = str::from_utf8(&response_slice);
+            if let Ok(str_data) = debug_conversion {
+                log_trace!(
+                    self.logger,
+                    "SerialEolInterface::ask/answer({:?} - {:?})",
+                    str_data,
+                    &response_slice
+                );
+            }
+        }
+
         Ok(Bytes::from(response_slice))
-        // String::from_utf8_unchecked(
     }
 }
-
-// #[async_trait]
-// impl AsciiCmdRespProtocol for Driver {
-
-//     ///
-//     ///
-//     ///
-//     async fn ask(&mut self, command: &String) -> Result<String, Error> {
-//         //
-//         // Append EOL to the command
-//         let mut command_buffer = command.clone().into_bytes();
-//         command_buffer.extend(&self.eol);
-
-//         // trace
-//         log_trace!(self.logger, "write {:?}", command_buffer);
-
-//         //
-//         // Write
-//         self.port
-//             .write(command_buffer.as_slice())
-//             .await
-//             .map_err(|e| format_driver_error!("Unable to write on serial port: {}", e))?;
-
-//         //
-//         // Read
-//         let count = self.read_until_timeout().await?;
-
-//         //
-//         // Build response string
-//         unsafe {
-//             let string_slice =
-//                 String::from_utf8_unchecked(self.read_buffer[..count - self.eol.len()].to_vec());
-//             return Ok(string_slice.to_string());
-//         }
-//     }
-// }
