@@ -64,7 +64,7 @@ pub struct EnumAttributeServer {
 
     ///
     ///
-    choices: Vec<String>,
+    whitelist: Vec<String>,
 }
 
 impl EnumAttributeServer {
@@ -77,7 +77,7 @@ impl EnumAttributeServer {
     ///
     ///
     pub fn r#type() -> String {
-        "string".to_string()
+        "enum".to_string()
     }
 
     ///
@@ -86,7 +86,7 @@ impl EnumAttributeServer {
         topic: String,
         mut cmd_receiver: Receiver<Bytes>,
         att_publisher: Publisher,
-        choices: Vec<String>,
+        whitelist: Vec<String>,
     ) -> Self {
         //
         //
@@ -118,7 +118,7 @@ impl EnumAttributeServer {
             att_publisher: att_publisher,
             pack: pack,
             update_notifier: n,
-            choices: choices,
+            whitelist: whitelist,
         }
     }
 

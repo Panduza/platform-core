@@ -178,13 +178,15 @@ impl AttributeServerBuilder {
     ) -> Result<EnumAttributeServer, Error> {
         let topic = self.topic.as_ref().unwrap();
         self.r#type = Some(EnumAttributeServer::r#type());
+
+        let choices: Vec<String> = choices.into_iter().map(Into::into).collect();
+        self.settings = Some(json!({
+            "choices": choices.clone(),
+        }));
+
         let (cmd_receiver, att_publisher) = self.common_ops(50).await;
-        let att = EnumAttributeServer::new(
-            topic.clone(),
-            cmd_receiver,
-            att_publisher,
-            choices.into_iter().map(Into::into).collect(),
-        );
+        let att =
+            EnumAttributeServer::new(topic.clone(), cmd_receiver, att_publisher, choices.clone());
         Ok(att)
     }
 

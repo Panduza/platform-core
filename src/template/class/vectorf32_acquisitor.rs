@@ -51,8 +51,8 @@ pub async fn mount<A: Into<String>, C: Container, I: VectorF32AccessorModel + Cl
         .start_as_vector_f32()
         .await?;
 
-    let data = interface.get_vectorf32_at(index).await?;
-    println!("{:?}", data);
+    // let data = interface.get_vectorf32_at(index).await?;
+    // println!("{:?}", data);
 
     //
     //

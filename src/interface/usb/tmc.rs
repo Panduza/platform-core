@@ -9,7 +9,7 @@ use byteorder::{ByteOrder, LittleEndian};
 
 use bytes::Bytes;
 use nusb::Interface as UsbInterface;
-use std::sync::Arc;
+use std::{str, sync::Arc};
 use tokio::sync::Mutex;
 
 ///
@@ -462,27 +462,21 @@ impl BytesDialogProtocol for UsbTmcInterface {
     async fn ask(&mut self, command: Bytes) -> Result<Bytes, Error> {
         let mut response: Vec<u8> = Vec::new();
         self.execute_command(&command, &mut response).await?;
+
+        //
+        // TRACE
+        {
+            let debug_conversion = str::from_utf8(&response);
+            if let Ok(str_data) = debug_conversion {
+                log_trace!(
+                    self.logger,
+                    "SerialEolInterface::ask/answer({:?} - {:?})",
+                    str_data,
+                    &response
+                );
+            }
+        }
+
         Ok(Bytes::from(response))
     }
 }
-
-// #[async_trait]
-// impl ReplProtocol for Driver {
-//     /// Send a command and return the response as a string
-//     ///
-//     async fn eval(&mut self, command: String) -> Result<String, Error> {
-//         // Log
-//         log_trace!(self.logger, "Eval: {:?}", command);
-
-//         // Execute command
-//         let mut response = Vec::new();
-//         self.execute_command(command.as_bytes(), &mut response)
-//             .await?;
-
-//         // Prepare
-//         match String::from_utf8(response) {
-//             Ok(s) => Ok(s),
-//             Err(_) => Ok("Cannot convert the payload into string".to_string()),
-//         }
-//     }
-// }

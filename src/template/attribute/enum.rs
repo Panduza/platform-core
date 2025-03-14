@@ -20,7 +20,7 @@ pub async fn mount<
 ) -> Result<(), Error> {
     //
     // Create attribute
-    let att_boolean_rw = parent
+    let mut att = parent
         .create_attribute(name)
         .with_rw()
         .with_info(info)
@@ -29,23 +29,34 @@ pub async fn mount<
 
     //
     // Create the local logger
-    let logger = att_boolean_rw.logger();
+    let logger = att.logger().clone();
     log_debug_mount_start!(logger);
 
     //
     // Just init
     let value = interface.get_string_at(index).await?;
     log_debug!(logger, "Initial value ({:?})", &value);
-    att_boolean_rw.set(value).await?;
+    att.set(value).await?;
 
-    // //
-    // let att_boolean_rw_2 = att_boolean_rw.clone();
-    // spawn_on_command!(
-    //     "on_command => boolean",
-    //     parent,
-    //     att_boolean_rw_2,
-    //     on_command(att_boolean_rw_2.clone(), interface.clone(), index)
-    // );
+    tokio::spawn(async move {
+        loop {
+            att.wait_for_commands().await;
+            while let Some(command) = att.pop().await {
+                //
+                // Log
+                log_debug!(att.logger(), "command received '{:?}'", command);
+
+                //
+                //
+                interface.set_string_at(index, command).await.unwrap();
+
+                //
+                // Read back
+                let read_back_value = interface.get_string_at(index).await.unwrap();
+                att.set(read_back_value).await.unwrap();
+            }
+        }
+    });
 
     //
     // End
