@@ -90,7 +90,7 @@ impl SiAttributeServer {
     ///
     ///
     pub fn r#type() -> String {
-        "string".to_string()
+        "si".to_string()
     }
 
     ///

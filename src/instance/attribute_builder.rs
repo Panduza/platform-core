@@ -13,6 +13,7 @@ use crate::Engine;
 use crate::Error;
 use crate::Notification;
 use panduza::pubsub::Publisher;
+use serde_json::json;
 use tokio::sync::mpsc::Sender;
 
 #[derive(Clone)]
@@ -265,12 +266,21 @@ impl AttributeServerBuilder {
     ) -> Result<SiAttributeServer, Error> {
         let topic = self.topic.as_ref().unwrap();
         self.r#type = Some(SiAttributeServer::r#type());
+
+        let unit = unit.into();
+        self.settings = Some(json!({
+            "unit": unit.clone(),
+            "min": min,
+            "max": max,
+            "decimals": decimals,
+        }));
+
         let (cmd_receiver, att_publisher) = self.common_ops(50).await;
         let att = SiAttributeServer::new(
             topic.clone(),
             cmd_receiver,
             att_publisher,
-            unit.into(),
+            unit.clone(),
             min,
             max,
             decimals,
