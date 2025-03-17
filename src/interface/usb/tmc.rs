@@ -188,15 +188,15 @@ impl UsbTmcInterface {
         data: &[u8],
     ) {
         //
-        // Prepare logger
-        let logger = Logger::new_isolated("prepare_first_bulk_out_request_message");
-        log_trace!(
-            logger,
-            "Prepare first bulk out (max size ={:?} Bytes) for (len={:?} Bytes) message={:?}",
-            out_buffer.1.len(),
-            data.len(),
-            data
-        );
+        // TRACE ULTRA
+        // let logger = Logger::new_isolated("prepare_first_bulk_out_request_message");
+        // log_trace!(
+        //     logger,
+        //     "Prepare first bulk out (max size ={:?} Bytes) for (len={:?} Bytes) message={:?}",
+        //     out_buffer.1.len(),
+        //     data.len(),
+        //     data
+        // );
 
         //
         // Initialize attributes
@@ -261,12 +261,13 @@ impl UsbTmcInterface {
         out_buffer.0 = 12;
     }
 
-    ///
+    /// Parse bulkin header
     ///
     fn parse_bulk_in_header(&self, data: &Vec<u8>) -> Result<usize, Error> {
         // log
-        log_trace!(self.logger, "msg id: {}", data[0]);
+        // log_trace!(self.logger, "msg id: {}", data[0]);
 
+        // TODO: do check size error
         let transfer_size = LittleEndian::read_u32(&data[4..8]) as usize;
 
         Ok(transfer_size)
@@ -301,7 +302,7 @@ impl UsbTmcInterface {
                 .into_result()
             {
                 Ok(val) => {
-                    log_trace!(self.logger, "BULK_OUT response {:?}", &val);
+                    log_trace!(self.logger, "BULK_OUT response success {:?}", &val);
                 }
                 Err(_e) => return Err(format_driver_error!("Unable to write on USB")),
             };
@@ -343,7 +344,7 @@ impl UsbTmcInterface {
                 .into_result()
             {
                 Ok(val) => {
-                    log_trace!(self.logger, "BULK_OUT response {:?}", &val);
+                    log_trace!(self.logger, "BULK_OUT response success {:?}", &val);
                 }
                 Err(_e) => return Err(format_driver_error!("Unable to write on USB")),
             };
@@ -363,7 +364,7 @@ impl UsbTmcInterface {
 
             // Receive data from the usb
             match tokio::time::timeout(
-                std::time::Duration::from_secs(1),
+                std::time::Duration::from_secs(5),
                 self.usb_interface
                     .bulk_in(self.endpoint_in, response_buffer),
             )
@@ -460,6 +461,30 @@ impl BytesDialogProtocol for UsbTmcInterface {
     /// Send a command, wait for response and return it
     ///
     async fn ask(&mut self, command: Bytes) -> Result<Bytes, Error> {
+        //
+        // TRACE
+        {
+            log_trace!(
+                self.logger,
+                "--------------------------------------------------------------"
+            );
+            let debug_conversion = str::from_utf8(&command);
+            if let Ok(str_data) = debug_conversion {
+                log_trace!(
+                    self.logger,
+                    "SerialEolInterface::ask/query({:?} - {:?})",
+                    str_data,
+                    &command.to_vec()
+                );
+            } else {
+                log_trace!(
+                    self.logger,
+                    "SerialEolInterface::ask/query({:?})",
+                    &command.to_vec()
+                );
+            }
+        }
+
         let mut response: Vec<u8> = Vec::new();
         self.execute_command(&command, &mut response).await?;
 
@@ -475,6 +500,10 @@ impl BytesDialogProtocol for UsbTmcInterface {
                     &response
                 );
             }
+            log_trace!(
+                self.logger,
+                "--------------------------------------------------------------"
+            );
         }
 
         Ok(Bytes::from(response))
