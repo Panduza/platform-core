@@ -1,5 +1,5 @@
 use crate::model::NumberAccessorModel;
-use crate::Error;
+use crate::{interface, Error};
 use crate::{log_debug, log_debug_mount_end, log_debug_mount_start, Container};
 use async_trait::async_trait;
 use panduza::fbs::number::NumberBuffer;
@@ -10,7 +10,7 @@ use tokio::sync::Mutex;
 ///
 pub async fn mount<
     C: Container,
-    I: NumberAccessorModel + 'static,
+    I: NumberAccessorModel + Clone + 'static,
     N: Into<String>,
     F: Into<String>,
     U: Into<String>,
@@ -40,11 +40,24 @@ pub async fn mount<
     log_debug_mount_start!(logger);
 
     //
-    // Just init
-    let value = interface.get_number_at(index).await?;
-    log_debug!(logger, "Initial value ({:?})", &value);
-    att.set(NumberBuffer::from_float_with_decimals(value, decimals))
-        .await?;
+    let rst = parent.reset_signal();
+    let logger2 = logger.clone();
+    let att2 = att.clone();
+    let mut interface2 = interface.clone();
+    tokio::spawn(async move {
+        loop {
+            //
+            // Just init
+            let value = interface2.get_number_at(index).await.unwrap();
+            log_debug!(logger2, "Initial value ({:?})", &value);
+            att2.set(NumberBuffer::from_float_with_decimals(value, decimals))
+                .await
+                .unwrap();
+
+            // Then wait for next reset
+            rst.notified().await;
+        }
+    });
 
     tokio::spawn(async move {
         loop {

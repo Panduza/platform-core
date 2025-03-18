@@ -63,7 +63,7 @@ pub async fn mount<A: Into<String>, C: Container, I: VectorF32AccessorModel + Cl
         index: index,
         att_srv: att_data,
     };
-    trigger::mount(top_class, trigger_wrap).await?;
+    trigger::mount(top_class, trigger_wrap, "trigger").await?;
 
     log_debug_mount_end!(logger);
     Ok(())

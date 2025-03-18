@@ -454,6 +454,29 @@ impl BytesDialogProtocol for UsbTmcInterface {
     /// Just send a command and does not expect any response
     ///
     async fn tell(&mut self, command: Bytes) -> Result<(), Error> {
+        //
+        // TRACE
+        {
+            log_trace!(
+                self.logger,
+                "--------------------------------------------------------------"
+            );
+            let debug_conversion = str::from_utf8(&command);
+            if let Ok(str_data) = debug_conversion {
+                log_trace!(
+                    self.logger,
+                    "SerialEolInterface::tell({:?} - {:?})",
+                    str_data,
+                    &command.to_vec()
+                );
+            } else {
+                log_trace!(
+                    self.logger,
+                    "SerialEolInterface::tell({:?})",
+                    &command.to_vec()
+                );
+            }
+        }
         self.send_command(&command).await
     }
 

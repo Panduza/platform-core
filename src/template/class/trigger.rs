@@ -20,14 +20,15 @@ pub trait Triggerable: Sync + Send {
 
 ///
 ///
-pub async fn mount<C: Container, I: Triggerable + Clone + 'static>(
+pub async fn mount<C: Container, I: Triggerable + Clone + 'static, N: Into<String>>(
     mut parent: C,
     mut interface: I,
+    name: N,
 ) -> Result<(), Error> {
     //
     //
     let mut class_trigger = parent
-        .create_class("trigger")
+        .create_class(name.into())
         .with_tag("trigger")
         .finish()
         .await;

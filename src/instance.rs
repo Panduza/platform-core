@@ -92,6 +92,10 @@ pub struct Instance {
     ///
     ///
     notification_channel: Sender<Notification>,
+
+    ///
+    ///
+    reset_signal: Arc<Notify>,
 }
 
 impl Instance {
@@ -117,6 +121,7 @@ impl Instance {
             state: Arc::new(Mutex::new(State::Booting)),
             state_change_notifier: Arc::new(Notify::new()),
             notification_channel: notification_channel,
+            reset_signal: Arc::new(Notify::new()),
         }
     }
 
@@ -252,6 +257,18 @@ impl Container for Instance {
     ///
     fn logger(&self) -> &Logger {
         &self.logger
+    }
+
+    /// Override
+    ///
+    fn reset_signal(&self) -> Arc<Notify> {
+        self.reset_signal.clone()
+    }
+
+    /// Override
+    ///
+    fn trigger_reset_signal(&self) {
+        self.reset_signal.notify_waiters();
     }
 
     /// Override

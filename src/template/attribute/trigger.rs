@@ -42,7 +42,7 @@ pub async fn mount<
         interface: interface.clone(),
         index: index,
     };
-    trigger::mount(parent, trigger_wrap).await?;
+    trigger::mount(parent, trigger_wrap, name).await?;
 
     // //
     // // Create attribute

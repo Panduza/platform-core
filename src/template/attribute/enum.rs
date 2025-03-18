@@ -33,10 +33,23 @@ pub async fn mount<
     log_debug_mount_start!(logger);
 
     //
-    // Just init
-    let value = interface.get_string_at(index).await?;
-    log_debug!(logger, "Initial value ({:?})", &value);
-    att.set(value).await?;
+    //
+    let rst = parent.reset_signal();
+    let logger2 = logger.clone();
+    let att2 = att.clone();
+    let mut interface2 = interface.clone();
+    tokio::spawn(async move {
+        loop {
+            //
+            // Just init
+            let value = interface2.get_string_at(index).await.unwrap();
+            log_debug!(logger2, "Initial value ({:?})", &value);
+            att2.set(value).await.unwrap();
+
+            // Then wait for next reset
+            rst.notified().await;
+        }
+    });
 
     tokio::spawn(async move {
         loop {
