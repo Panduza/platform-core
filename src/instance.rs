@@ -13,12 +13,12 @@ use attribute_builder::AttributeServerBuilder;
 use class_builder::ClassBuilder;
 pub use container::Container;
 
-use crate::{engine::Engine, Error, InstanceSettings, TaskResult};
+use crate::{engine::Engine, InstanceSettings};
 use crate::{log_error, Actions, Logger, Notification};
 // use class_builder::ClassBuilder;
 
 use serde::{Deserialize, Serialize};
-use std::{fmt::Display, future::Future, sync::Arc};
+use std::{fmt::Display, sync::Arc};
 use tokio::sync::Mutex;
 use tokio::sync::{mpsc::Sender, Notify};
 
@@ -73,6 +73,10 @@ pub struct Instance {
     ///
     topic: String,
 
+    ///
+    ///
+    settings: Option<InstanceSettings>,
+
     /// Operations of the devices
     ///
     actions: Arc<Mutex<Box<dyn Actions>>>,
@@ -88,6 +92,10 @@ pub struct Instance {
     ///
     ///
     notification_channel: Sender<Notification>,
+
+    ///
+    ///
+    reset_signal: Arc<Notify>,
 }
 
 impl Instance {
@@ -107,16 +115,13 @@ impl Instance {
         Instance {
             logger: Logger::new_for_instance(name.clone()),
             engine: engine.clone(),
-            // info_pack: info_pack,
-            // info_dyn_dev_status: None,
-            // r_notifier: r_notifier,
-            // inner: InstanceInner::new(reactor.clone(), settings).into(),
-            // inner_operations: Arc::new(Mutex::new(operations)),
             topic: format!("{}/{}", engine.root_topic(), name),
+            settings: settings,
             actions: Arc::new(Mutex::new(actions)),
             state: Arc::new(Mutex::new(State::Booting)),
             state_change_notifier: Arc::new(Notify::new()),
             notification_channel: notification_channel,
+            reset_signal: Arc::new(Notify::new()),
         }
     }
 
@@ -203,12 +208,11 @@ impl Instance {
         // Ok(())
     }
 
-    // ///
-    // /// Clone settings of the device
-    // ///
-    // pub async fn settings(&self) -> Option<InstanceSettings> {
-    //     self.inner.lock().await.settings.clone()
-    // }
+    /// Clone settings of the device
+    ///
+    pub async fn settings(&self) -> Option<InstanceSettings> {
+        self.settings.clone()
+    }
 
     pub fn name(&self) -> String {
         match self.topic.split('/').last() {
@@ -253,6 +257,18 @@ impl Container for Instance {
     ///
     fn logger(&self) -> &Logger {
         &self.logger
+    }
+
+    /// Override
+    ///
+    fn reset_signal(&self) -> Arc<Notify> {
+        self.reset_signal.clone()
+    }
+
+    /// Override
+    ///
+    fn trigger_reset_signal(&self) {
+        self.reset_signal.notify_waiters();
     }
 
     /// Override

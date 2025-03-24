@@ -1,6 +1,9 @@
-use super::{attribute_builder::AttributeServerBuilder, class_builder::ClassBuilder};
+use super::attribute_builder::AttributeServerBuilder;
+use super::class_builder::ClassBuilder;
 use crate::Logger;
 use async_trait::async_trait;
+use std::sync::Arc;
+use tokio::sync::Notify;
 
 #[async_trait]
 /// Common interface shared between Instance and Class
@@ -11,6 +14,14 @@ pub trait Container: Clone {
     /// Get for the container logger
     ///
     fn logger(&self) -> &Logger;
+
+    /// Signal to request a new init of the attribute
+    ///
+    fn reset_signal(&self) -> Arc<Notify>;
+
+    ///
+    ///
+    fn trigger_reset_signal(&self);
 
     /// Create a new interface from this device
     ///

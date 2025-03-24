@@ -1,14 +1,11 @@
 pub mod producer;
-use panduza::pubsub::Operator;
 pub use producer::Producer;
-
 pub mod production_order;
 pub mod store;
-use store::{Product, Store};
-use tokio::sync::mpsc::Sender;
-
 use crate::{Engine, Instance, Logger, Notification, ProductionOrder};
 use std::{collections::HashMap, ffi::CString};
+use store::{Product, Store};
+use tokio::sync::mpsc::Sender;
 
 /// Factory to create devices from a configuration json
 ///

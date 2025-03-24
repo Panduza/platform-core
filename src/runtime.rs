@@ -1,6 +1,6 @@
 pub mod notification;
 use crate::engine::EngineBuilder;
-use crate::{log_debug, log_trace, Engine, NotificationGroup, ProductionOrder, TaskResult};
+use crate::{log_debug, log_trace, Engine, Error, NotificationGroup, ProductionOrder};
 use crate::{Factory, Logger};
 use notification::Notification;
 use std::sync::{
@@ -102,7 +102,7 @@ impl Runtime {
     ///
     /// Main task of the runtime, it consume the object itself
     ///
-    pub async fn task(mut self) -> TaskResult {
+    pub async fn task(mut self) -> Result<(), Error> {
         //
         // Debug log
         self.logger.info("Runtime started !");

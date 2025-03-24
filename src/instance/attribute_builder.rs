@@ -4,6 +4,8 @@ use super::server::r#enum::EnumAttributeServer;
 use super::server::sample::SampleAttributeServer;
 use super::server::si::SiAttributeServer;
 use super::server::string::StringAttributeServer;
+use super::server::trigger_v0::TriggerAttributeServer;
+use super::server::vector_f32_v0::VectorF32AttributeServer;
 use crate::instance::class::Class;
 use crate::runtime::notification::attribute::AttributeMode;
 use crate::AttributeNotification;
@@ -11,6 +13,7 @@ use crate::Engine;
 use crate::Error;
 use crate::Notification;
 use panduza::pubsub::Publisher;
+use serde_json::json;
 use tokio::sync::mpsc::Sender;
 
 #[derive(Clone)]
@@ -175,13 +178,15 @@ impl AttributeServerBuilder {
     ) -> Result<EnumAttributeServer, Error> {
         let topic = self.topic.as_ref().unwrap();
         self.r#type = Some(EnumAttributeServer::r#type());
+
+        let choices: Vec<String> = choices.into_iter().map(Into::into).collect();
+        self.settings = Some(json!({
+            "choices": choices.clone(),
+        }));
+
         let (cmd_receiver, att_publisher) = self.common_ops(50).await;
-        let att = EnumAttributeServer::new(
-            topic.clone(),
-            cmd_receiver,
-            att_publisher,
-            choices.into_iter().map(Into::into).collect(),
-        );
+        let att =
+            EnumAttributeServer::new(topic.clone(), cmd_receiver, att_publisher, choices.clone());
         Ok(att)
     }
 
@@ -192,6 +197,26 @@ impl AttributeServerBuilder {
         self.r#type = Some(SampleAttributeServer::r#type());
         let (cmd_receiver, att_publisher) = self.common_ops(50).await;
         let att = SampleAttributeServer::new(topic.clone(), cmd_receiver, att_publisher);
+        Ok(att)
+    }
+
+    /// TRIGGER
+    ///
+    pub async fn start_as_trigger(mut self) -> Result<TriggerAttributeServer, Error> {
+        let topic = self.topic.as_ref().unwrap();
+        self.r#type = Some(TriggerAttributeServer::r#type());
+        let (cmd_receiver, att_publisher) = self.common_ops(50).await;
+        let att = TriggerAttributeServer::new(topic.clone(), cmd_receiver, att_publisher);
+        Ok(att)
+    }
+
+    /// VECTOR_F32
+    ///
+    pub async fn start_as_vector_f32(mut self) -> Result<VectorF32AttributeServer, Error> {
+        let topic = self.topic.as_ref().unwrap();
+        self.r#type = Some(VectorF32AttributeServer::r#type());
+        let (cmd_receiver, att_publisher) = self.common_ops(50).await;
+        let att = VectorF32AttributeServer::new(topic.clone(), cmd_receiver, att_publisher);
         Ok(att)
     }
 
@@ -241,45 +266,27 @@ impl AttributeServerBuilder {
         max: f64,
         decimals: usize,
     ) -> Result<SiAttributeServer, Error> {
-        //
-        //
+        let topic = self.topic.as_ref().unwrap();
         self.r#type = Some(SiAttributeServer::r#type());
 
-        //
-        //
-        self.send_creation_notification().await;
+        let unit = unit.into();
+        self.settings = Some(json!({
+            "unit": unit.clone(),
+            "min": min,
+            "max": max,
+            "decimals": decimals,
+        }));
 
-        let topic = self.topic.unwrap();
-
-        let cmd_receiver: tokio::sync::mpsc::Receiver<bytes::Bytes> = self
-            .engine
-            .register_listener(format!("{}/cmd", topic), 50)
-            .await
-            .unwrap();
-
-        let att_publisher = self
-            .engine
-            .register_publisher(format!("{}/att", topic), true)
-            .unwrap();
-
-        //
-        //
+        let (cmd_receiver, att_publisher) = self.common_ops(50).await;
         let att = SiAttributeServer::new(
-            topic,
+            topic.clone(),
             cmd_receiver,
             att_publisher,
-            unit.into(),
+            unit.clone(),
             min,
             max,
             decimals,
         );
-
-        // //
-        // // Attach the attribute to its parent class if exist
-        // if let Some(mut parent_class) = self.parent_class {
-        //     parent_class.push_sub_element(att.clone_as_element()).await;
-        // }
-
         Ok(att)
     }
 

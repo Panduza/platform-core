@@ -1,8 +1,10 @@
+use crate::log_trace;
 use crate::Error;
 use crate::Logger;
 use bytes::Bytes;
 use panduza::fbs::number::NumberBuffer;
 use panduza::pubsub::Publisher;
+use std::str;
 use std::sync::Arc;
 use std::sync::Mutex;
 use tokio::sync::mpsc::Receiver;
@@ -90,7 +92,7 @@ impl SiAttributeServer {
     ///
     ///
     pub fn r#type() -> String {
-        "string".to_string()
+        "si".to_string()
     }
 
     ///
@@ -147,6 +149,26 @@ impl SiAttributeServer {
     pub async fn set(&self, value: NumberBuffer) -> Result<(), Error> {
         // Wrap value into payload
         let pyl = value.raw_data();
+
+        //
+        // TRACE
+        {
+            let debug_conversion = str::from_utf8(&pyl);
+            if let Ok(str_data) = debug_conversion {
+                log_trace!(
+                    self.logger,
+                    "SiAttributeServer::publish({} - {:?})",
+                    str_data,
+                    &pyl.to_vec()
+                );
+            } else {
+                log_trace!(
+                    self.logger,
+                    "SiAttributeServer::publish({:?} )",
+                    &pyl.to_vec()
+                );
+            }
+        }
 
         // Send the command
         self.att_publisher.publish(pyl).await.unwrap();

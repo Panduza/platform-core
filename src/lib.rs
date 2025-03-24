@@ -93,16 +93,6 @@ pub use runtime::RuntimeBuilder;
 pub mod topic;
 pub use topic::Topic;
 
-// pub use instance::class::Class;
-// pub use instance::class_builder::ClassBuilder;
-// pub use instance::container::Container;
-// pub use instance::monitor::InstanceMonitor;
-// pub use instance::Instance;
-// pub use instance::InstanceInner;
-
-/// Return type for spawned task
-pub type TaskResult = Result<(), Error>;
-
 ///
 ///
 pub mod env;
@@ -125,11 +115,19 @@ pub mod env;
 /// - usb => for usb drivers (also enable usb)
 /// - serial => for serial drivers (also enable usb)
 ///
-// pub mod connector;
+pub mod interface;
 
 /// Currently we put here a trait waiting to see if there is a better use later
 ///
 pub mod protocol;
+
+///
+///
+pub mod helper;
+
+///
+///
+pub mod model;
 
 ///
 /// TODO => put in factory
@@ -138,3 +136,7 @@ pub mod props;
 pub use props::Prop;
 pub use props::PropType;
 pub use props::Props;
+
+///
+///
+pub mod template;

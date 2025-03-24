@@ -1,6 +1,7 @@
 use crate::Error;
 use crate::Logger;
 use bytes::Bytes;
+use panduza::fbs::vector_f32_v0::VectorF32Buffer;
 use panduza::pubsub::Publisher;
 use std::sync::Arc;
 use std::sync::Mutex;
@@ -8,27 +9,27 @@ use tokio::sync::mpsc::Receiver;
 use tokio::sync::Notify;
 
 #[derive(Default, Debug)]
-struct EnumDataPack {
+struct VectorF32DataPack {
     /// Queue of value (need to be poped)
     ///
-    queue: Vec<String>,
+    queue: Vec<VectorF32Buffer>,
 
     ///
     ///
     update_notifier: Arc<Notify>,
 }
 
-impl EnumDataPack {
+impl VectorF32DataPack {
     ///
     ///
-    pub fn push(&mut self, v: String) {
+    pub fn push(&mut self, v: VectorF32Buffer) {
         self.queue.push(v);
         self.update_notifier.notify_waiters();
     }
 
     ///
     ///
-    pub fn pop(&mut self) -> Option<String> {
+    pub fn pop(&mut self) -> Option<VectorF32Buffer> {
         if self.queue.is_empty() {
             return None;
         }
@@ -45,7 +46,7 @@ impl EnumDataPack {
 ///
 ///
 #[derive(Clone)]
-pub struct EnumAttributeServer {
+pub struct VectorF32AttributeServer {
     /// Local logger
     ///
     logger: Logger,
@@ -56,18 +57,14 @@ pub struct EnumAttributeServer {
 
     /// Inner server implementation
     ///
-    pack: Arc<Mutex<EnumDataPack>>,
+    pack: Arc<Mutex<VectorF32DataPack>>,
 
     ///
     ///
     update_notifier: Arc<Notify>,
-
-    ///
-    ///
-    whitelist: Vec<String>,
 }
 
-impl EnumAttributeServer {
+impl VectorF32AttributeServer {
     /// Logger getter
     ///
     pub fn logger(&self) -> &Logger {
@@ -77,20 +74,15 @@ impl EnumAttributeServer {
     ///
     ///
     pub fn r#type() -> String {
-        "enum".to_string()
+        "vector_f32-v0".to_string()
     }
 
     ///
     ///
-    pub fn new(
-        topic: String,
-        mut cmd_receiver: Receiver<Bytes>,
-        att_publisher: Publisher,
-        whitelist: Vec<String>,
-    ) -> Self {
+    pub fn new(topic: String, mut cmd_receiver: Receiver<Bytes>, att_publisher: Publisher) -> Self {
         //
         //
-        let pack = Arc::new(Mutex::new(EnumDataPack::default()));
+        let pack = Arc::new(Mutex::new(VectorF32DataPack::default()));
 
         //
         // Subscribe then check for incomming messages
@@ -100,10 +92,11 @@ impl EnumAttributeServer {
                 let message = cmd_receiver.recv().await;
                 match message {
                     Some(data) => {
-                        // Deserialize
-                        let value: String = serde_json::from_slice(&data).unwrap();
                         // Push into pack
-                        pack_2.lock().unwrap().push(value);
+                        pack_2
+                            .lock()
+                            .unwrap()
+                            .push(VectorF32Buffer::from_raw_data(data));
                     }
                     None => todo!(),
                 }
@@ -118,25 +111,24 @@ impl EnumAttributeServer {
             att_publisher: att_publisher,
             pack: pack,
             update_notifier: n,
-            whitelist: whitelist,
         }
     }
 
     /// Set the value of the attribute
     ///
-    pub async fn set(&self, value: String) -> Result<(), Error> {
+    pub async fn set(&self, values: &Vec<f32>) -> Result<(), Error> {
         // Wrap value into payload
-        let pyl = Bytes::from(serde_json::to_string(&value).unwrap());
+        let pyl = VectorF32Buffer::from_values(values);
 
         // Send the command
-        self.att_publisher.publish(pyl).await.unwrap();
+        self.att_publisher.publish(pyl.take_data()).await.unwrap();
         Ok(())
     }
 
     /// Get the value of the attribute
     /// If None, the first value is not yet received
     ///
-    pub async fn pop(&mut self) -> Option<String> {
+    pub async fn pop(&mut self) -> Option<VectorF32Buffer> {
         self.pack.lock().unwrap().pop()
     }
 

@@ -1,13 +1,11 @@
 use super::attribute_builder::AttributeServerBuilder;
-// use super::element::Element;
 use super::{class_builder::ClassBuilder, Container};
-use crate::{Error, Instance, Logger, Notification, TaskResult};
+use crate::{Error, Instance, Logger, Notification};
 use async_trait::async_trait;
-use futures::lock::Mutex;
-use std::future::Future;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use tokio::sync::mpsc::Sender;
+use tokio::sync::Notify;
 
 #[derive(Clone)]
 ///
@@ -36,6 +34,9 @@ pub struct Class {
     // / Sub elements
     // /
     // sub_elements: Arc<Mutex<Vec<Element>>>,
+    ///
+    ///
+    reset_signal: Arc<Notify>,
 }
 
 impl Class {
@@ -48,6 +49,7 @@ impl Class {
             topic: builder.topic.clone(),
             enabled: Arc::new(AtomicBool::new(true)),
             notification_channel: notification_channel, // sub_elements: Arc::new(Mutex::new(Vec::new())),
+            reset_signal: builder.instance.reset_signal(),
         }
     }
 
@@ -82,10 +84,22 @@ impl Class {
 
 #[async_trait]
 impl Container for Class {
-    /// Get for the container logger
+    /// Override
     ///
     fn logger(&self) -> &Logger {
         &self.logger
+    }
+
+    /// Override
+    ///
+    fn reset_signal(&self) -> Arc<Notify> {
+        self.reset_signal.clone()
+    }
+
+    /// Override
+    ///
+    fn trigger_reset_signal(&self) {
+        self.reset_signal.notify_waiters();
     }
 
     /// Override
