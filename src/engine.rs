@@ -2,10 +2,12 @@ pub mod options;
 use options::EngineOptions;
 
 use panduza::{
-    pubsub,
-    pubsub::Publisher,
-    router::{DataReceiver, Router, RouterHandler},
+    pubsub::{self, new_connection}, // router::{DataReceiver, Router, RouterHandler},
 };
+use zenoh::pubsub::Publisher;
+use zenoh::pubsub::Subscriber;
+use zenoh::sample::Sample;
+use zenoh::{handlers::FifoChannelHandler, Session};
 
 // #[async_trait]
 // impl MessageHandler for PzaScanMessageHandler {
@@ -38,7 +40,7 @@ use panduza::{
 pub struct Engine {
     /// Engine works on router objects
     ///
-    router: RouterHandler,
+    pub session: Session,
 }
 
 impl Engine {
@@ -48,13 +50,13 @@ impl Engine {
     ///
     /// * `core` - The core of the reactor
     ///
-    pub fn new(router: RouterHandler) -> Self {
+    pub fn new(session: Session) -> Self {
         // let data = ;
 
         // Server hostname
         // let hostname = hostname::get().unwrap().to_string_lossy().to_string();
 
-        Self { router: router }
+        Self { session: session }
     }
 
     ///
@@ -66,22 +68,21 @@ impl Engine {
 
     /// Register
     ///
-    pub fn register_listener<A: Into<String> + 'static>(
+    pub async fn register_listener<A: Into<String> + 'static>(
         &self,
         topic: A,
         channel_size: usize,
-    ) -> impl std::future::Future<Output = Result<DataReceiver, String>> + '_ {
-        self.router.register_listener(topic, channel_size)
+    ) -> Subscriber<FifoChannelHandler<Sample>> {
+        self.session.declare_subscriber(topic.into()).await.unwrap()
     }
 
     ///
     ///
-    pub fn register_publisher<A: Into<String> + 'static>(
+    pub async fn register_publisher<A: Into<String> + 'static>(
         &self,
         topic: A,
-        retain: bool,
     ) -> Result<Publisher, pubsub::Error> {
-        self.router.register_publisher(topic.into(), retain)
+        Ok(self.session.declare_publisher(topic.into()).await.unwrap())
     }
 
     // pub fn start(
@@ -132,50 +133,51 @@ impl Engine {
 
 /// Create and Start the engine
 ///
-pub fn new_engine(options: EngineOptions) -> Result<Engine, String> {
+pub async fn new_engine(options: EngineOptions) -> Result<Engine, String> {
     //
     // Create MQTT router
-    let router = panduza::router::new_router(options.pubsub_options).map_err(|e| e.to_string())?;
+    // let router = panduza::router::new_router(options.pubsub_options).map_err(|e| e.to_string())?;
+
+    let session = new_connection(options.pubsub_options)
+        .await
+        .map_err(|e| e.to_string())?;
 
     //
     // Start the router and keep the operation handler
-    let router_handler = router.start(None).unwrap();
+    // let router_handler = router.start(None).unwrap();
 
     //
     // Finalize the engine
-    Ok(Engine::new(router_handler))
+    Ok(Engine::new(session))
 }
 
-/// The goal of this object is to provide a tmp object that
-/// does not use tokio:spawn, to be able to prepare the context.
-/// Before starting a tokio context.
-///
+// / The goal of this object is to provide a tmp object that
+// / does not use tokio:spawn, to be able to prepare the context.
+// / Before starting a tokio context.
+// /
+
 pub struct EngineBuilder {
     // options: EngineOptions,
-    router: Router,
+    session: Session,
 }
 
 impl EngineBuilder {
     /// Create and Start the engine
     ///
-    pub fn new(options: EngineOptions) -> Self {
+    pub async fn new(options: EngineOptions) -> Self {
         //
         // Create router
-        let router = panduza::router::new_router(options.pubsub_options)
-            .map_err(|e| e.to_string())
-            .unwrap();
+        let session = new_connection(options.pubsub_options).await.unwrap();
 
         Self {
             // options: options,
-            router: router,
+            session: session,
         }
     }
 
     pub fn build(self) -> Engine {
-        let router_handler = self.router.start(None).unwrap();
-
         //
         // Finalize the engine
-        Engine::new(router_handler)
+        Engine::new(self.session)
     }
 }

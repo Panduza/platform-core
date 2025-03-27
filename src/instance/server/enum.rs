@@ -8,6 +8,10 @@ use std::sync::Mutex;
 use tokio::sync::mpsc::Receiver;
 use tokio::sync::mpsc::Sender;
 use tokio::sync::Notify;
+use tracing::Subscriber;
+use zenoh::handlers::FifoChannelHandler;
+use zenoh::pubsub::Subscriber;
+use zenoh::sample::Sample;
 
 #[derive(Default, Debug)]
 struct EnumDataPack {
@@ -86,7 +90,7 @@ impl EnumAttributeServer {
     ///
     pub fn new(
         topic: String,
-        mut cmd_receiver: Receiver<Bytes>,
+        mut cmd_receiver: Subscriber<FifoChannelHandler<Sample>>,
         att_publisher: Publisher,
         task_monitor_sender: Sender<NamedTaskHandle>,
         whitelist: Vec<String>,

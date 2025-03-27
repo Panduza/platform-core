@@ -7,6 +7,9 @@ use std::sync::Arc;
 use std::sync::Mutex;
 use tokio::sync::mpsc::Receiver;
 use tokio::sync::Notify;
+use zenoh::handlers::FifoChannelHandler;
+use zenoh::pubsub::Subscriber;
+use zenoh::sample::Sample;
 
 #[derive(Default, Debug)]
 struct SampleDataPack {
@@ -79,7 +82,11 @@ impl SampleAttributeServer {
 
     ///
     ///
-    pub fn new(topic: String, mut cmd_receiver: Receiver<Bytes>, att_publisher: Publisher) -> Self {
+    pub fn new(
+        topic: String,
+        mut cmd_receiver: Subscriber<FifoChannelHandler<Sample>>,
+        att_publisher: Publisher,
+    ) -> Self {
         //
         //
         let pack = Arc::new(Mutex::new(SampleDataPack::default()));

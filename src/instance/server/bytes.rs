@@ -2,39 +2,38 @@ use crate::Error;
 use crate::Logger;
 use bytes::Bytes;
 // use panduza::pubsub::Publisher;
-use panduza::task_monitor::NamedTaskHandle;
 use std::sync::Arc;
 use std::sync::Mutex;
 use tokio::sync::mpsc::Receiver;
-use tokio::sync::mpsc::Sender;
 use tokio::sync::Notify;
 use zenoh::handlers::FifoChannelHandler;
 use zenoh::pubsub::Subscriber;
 use zenoh::sample::Sample;
 use zenoh::Session;
+// use tokio::sync::Mutex;
 
 #[derive(Default, Debug)]
-struct StringDataPack {
+struct BytesDataPack {
     /// Queue of value (need to be poped)
     ///
-    queue: Vec<String>,
+    queue: Vec<Bytes>,
 
     ///
     ///
     update_notifier: Arc<Notify>,
 }
 
-impl StringDataPack {
+impl BytesDataPack {
     ///
     ///
-    pub fn push(&mut self, v: String) {
-        self.queue.push(v.clone());
+    pub fn push(&mut self, v: Bytes) {
+        self.queue.push(v);
         self.update_notifier.notify_waiters();
     }
 
     ///
     ///
-    pub fn pop(&mut self) -> Option<String> {
+    pub fn pop(&mut self) -> Option<Bytes> {
         if self.queue.is_empty() {
             return None;
         }
@@ -51,7 +50,7 @@ impl StringDataPack {
 ///
 ///
 #[derive(Clone)]
-pub struct StringAttributeServer {
+pub struct BytesAttributeServer {
     /// Local logger
     ///
     logger: Logger,
@@ -62,7 +61,7 @@ pub struct StringAttributeServer {
 
     /// Inner server implementation
     ///
-    pack: Arc<Mutex<StringDataPack>>,
+    pack: Arc<Mutex<BytesDataPack>>,
 
     ///
     ///
@@ -74,10 +73,10 @@ pub struct StringAttributeServer {
 
     /// query value
     ///
-    current_value: Arc<Mutex<String>>,
+    current_value: Arc<Mutex<Bytes>>,
 }
 
-impl StringAttributeServer {
+impl BytesAttributeServer {
     /// Logger getter
     ///
     pub fn logger(&self) -> &Logger {
@@ -87,21 +86,20 @@ impl StringAttributeServer {
     ///
     ///
     pub fn r#type() -> String {
-        "string".to_string()
+        "bytes".to_string()
     }
 
     ///
     ///
-    pub async fn new(
+    pub fn new(
         session: Session,
         topic: String,
         mut cmd_receiver: Subscriber<FifoChannelHandler<Sample>>,
-        task_monitor_sender: Sender<NamedTaskHandle>,
     ) -> Self {
         //
         //
-        let pack = Arc::new(Mutex::new(StringDataPack::default()));
-        let query_value = Arc::new(Mutex::new(String::new()));
+        let pack = Arc::new(Mutex::new(BytesDataPack::default()));
+        let query_value = Arc::new(Mutex::new(Bytes::new()));
 
         // create a queryable to get value at initialization
         //
@@ -116,7 +114,7 @@ impl StringAttributeServer {
 
             while let Ok(query) = queryable.recv_async().await {
                 let value = query_value_clone.lock().unwrap().clone(); // Clone the value
-                let pyl = Bytes::from(serde_json::to_string(&value).unwrap());
+                let pyl: Bytes = value.into();
                 query
                     .reply(format!("{}/att", topic_clone.clone()), pyl)
                     .await
@@ -127,17 +125,13 @@ impl StringAttributeServer {
         //
         // Subscribe then check for incomming messages
         let pack_2 = pack.clone();
-        let handle = tokio::spawn(async move {
+        tokio::spawn(async move {
             while let Ok(sample) = cmd_receiver.recv_async().await {
-                let value = sample.payload().try_to_string().unwrap().to_string();
+                let value: Bytes = Bytes::copy_from_slice(&sample.payload().to_bytes());
                 // Push into pack
                 pack_2.lock().unwrap().push(value);
             }
         });
-        task_monitor_sender
-            .send((format!("SERVER/STRING >> {}", &topic), handle))
-            .await
-            .unwrap();
 
         //
         //
@@ -154,12 +148,14 @@ impl StringAttributeServer {
 
     /// Set the value of the attribute
     ///
-    pub async fn set(&self, value: String) -> Result<(), Error> {
+    pub async fn set<T: Into<Bytes>>(&self, value: T) -> Result<(), Error> {
+        let bytes: Bytes = value.into();
         // update the current queriable value
-        *self.current_value.lock().unwrap() = value.clone();
+        *self.current_value.lock().unwrap() = bytes.clone();
 
+        // Send the command
         self.session
-            .put(format!("{}/att", self.topic.clone()), Bytes::from(value))
+            .put(format!("{}/att", self.topic.clone()), bytes)
             .await
             .unwrap();
         Ok(())
@@ -168,7 +164,7 @@ impl StringAttributeServer {
     /// Get the value of the attribute
     /// If None, the first value is not yet received
     ///
-    pub async fn pop(&mut self) -> Option<String> {
+    pub async fn pop(&mut self) -> Option<Bytes> {
         self.pack.lock().unwrap().pop()
     }
 
