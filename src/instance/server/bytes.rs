@@ -12,7 +12,7 @@ use tokio::sync::Notify;
 struct BytesDataPack {
     /// Queue of value (need to be poped)
     ///
-    queue: Vec<u8>,
+    queue: Vec<Bytes>,
 
     ///
     ///
@@ -22,14 +22,14 @@ struct BytesDataPack {
 impl BytesDataPack {
     ///
     ///
-    pub fn push(&mut self, v: u8) {
+    pub fn push(&mut self, v: Bytes) {
         self.queue.push(v);
         self.update_notifier.notify_waiters();
     }
 
     ///
     ///
-    pub fn pop(&mut self) -> Option<u8> {
+    pub fn pop(&mut self) -> Option<Bytes> {
         if self.queue.is_empty() {
             return None;
         }
@@ -93,7 +93,7 @@ impl BytesAttributeServer {
                 match message {
                     Some(data) => {
                         // Deserialize
-                        let value: u8 = serde_json::from_slice(&data).unwrap();
+                        let value: Bytes = data;
                         // Push into pack
                         pack_2.lock().unwrap().push(value);
                     }
@@ -115,10 +115,9 @@ impl BytesAttributeServer {
 
     /// Set the value of the attribute
     ///
-    pub async fn set(&self, value: u8) -> Result<(), Error> {
-        // Wrap value into payload
-        let pyl = Bytes::from(serde_json::to_string(&value).unwrap());
-
+    pub async fn set<T: Into<Bytes>>(&self, value: T) -> Result<(), Error> {
+        // Convert value into Bytes
+        let pyl = value.into();
         // Send the command
         self.att_publisher.publish(pyl).await.unwrap();
         Ok(())
@@ -127,7 +126,7 @@ impl BytesAttributeServer {
     /// Get the value of the attribute
     /// If None, the first value is not yet received
     ///
-    pub async fn pop(&mut self) -> Option<u8> {
+    pub async fn pop(&mut self) -> Option<Bytes> {
         self.pack.lock().unwrap().pop()
     }
 
