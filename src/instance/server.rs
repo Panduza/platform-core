@@ -2,6 +2,7 @@ pub mod boolean;
 pub mod bytes;
 pub mod r#enum;
 pub mod json;
+pub mod number;
 pub mod sample;
 pub mod si;
 pub mod string;
