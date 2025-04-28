@@ -132,10 +132,12 @@ impl Engine {
 
 /// Create and Start the engine
 ///
-pub fn new_engine(options: EngineOptions) -> Result<Engine, String> {
+pub async fn new_engine(options: EngineOptions) -> Result<Engine, String> {
     //
     // Create MQTT router
-    let router = panduza::router::new_router(options.pubsub_options).map_err(|e| e.to_string())?;
+    let router = panduza::router::new_router(options.pubsub_options)
+        .await
+        .map_err(|e| e.to_string())?;
 
     //
     // Start the router and keep the operation handler
@@ -158,10 +160,11 @@ pub struct EngineBuilder {
 impl EngineBuilder {
     /// Create and Start the engine
     ///
-    pub fn new(options: EngineOptions) -> Self {
+    pub async fn new(options: EngineOptions) -> Self {
         //
         // Create router
         let router = panduza::router::new_router(options.pubsub_options)
+            .await
             .map_err(|e| e.to_string())
             .unwrap();
 

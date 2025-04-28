@@ -10,11 +10,12 @@ pub struct EngineOptions {
 }
 
 impl EngineOptions {
-    pub fn new<T: Into<String>>(ip: T, port: u16) -> Self {
+    pub fn new<T: Into<String>>(ip: T, port: u16, ca_certificate: T) -> Self {
         Self {
             pubsub_options: pubsub::Options {
                 ip: ip.into(),
                 port: port,
+                ca_certificate: ca_certificate.into(),
             },
         }
     }
