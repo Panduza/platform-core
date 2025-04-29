@@ -1,8 +1,10 @@
 pub mod notification;
 use crate::engine::EngineBuilder;
+
 use crate::{log_debug, log_trace, Engine, Error, NotificationGroup, ProductionOrder};
 use crate::{Factory, Logger};
 use notification::Notification;
+use panduza::TaskMonitor;
 use std::sync::{
     atomic::{AtomicBool, Ordering},
     Arc,
@@ -52,6 +54,10 @@ pub struct Runtime {
     ///
     ///
     notification_channel: (Sender<Notification>, Receiver<Notification>),
+
+    ///
+    ///
+    task_monitor: TaskMonitor,
 }
 
 impl Runtime {
@@ -64,6 +70,27 @@ impl Runtime {
         notifications: Arc<std::sync::Mutex<NotificationGroup>>,
         notification_channel: (Sender<Notification>, Receiver<Notification>),
     ) -> Self {
+        //
+        //
+        let (task_monitor, mut task_monitor_event_receiver) = TaskMonitor::new("RUNTIME");
+
+        tokio::spawn(async move {
+            loop {
+                let event_recv = task_monitor_event_receiver.recv().await;
+                match event_recv {
+                    Some(event) => {
+                        // log_debug!(logger, "TaskMonitor event: {:?}", event);
+                        // Handle the event as needed
+                    }
+                    None => {
+                        // log_warn!(logger, "TaskMonitor pipe closed");
+                        // Handle the error as needed
+                        break;
+                    }
+                }
+            }
+        });
+
         Self {
             logger: Logger::new_for_runtime(),
             factory: factory,
@@ -73,6 +100,7 @@ impl Runtime {
             production_order_receiver: Some(po_receiver),
             notifications: notifications,
             notification_channel: notification_channel,
+            task_monitor: task_monitor,
         }
     }
 
@@ -136,23 +164,19 @@ impl Runtime {
 
 
                     //
-                    tokio::spawn(async move {
+                    let task_handle = tokio::spawn(async move {
                         loop {
                             instance.run_fsm().await;
                         }
                     });
 
+                    //
+                    self.task_monitor
+                        .handle_sender()
+                        .send((format!("RT/FSM/{}", name), task_handle))
+                        .await
+                        .unwrap();
 
-                    // self.task_sender
-                    //     .spawn_with_name(
-                    //         format!("{}/monitor", name),
-                    //         async move {
-                    //             monitor.run().await;
-                    //             Ok(())
-                    //         }
-                    //         .boxed(),
-                    //     )
-                    //     .unwrap();
 
                 },
                 notif = self.notification_channel.1.recv() => {

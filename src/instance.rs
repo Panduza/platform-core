@@ -12,6 +12,8 @@ pub mod server;
 use attribute_builder::AttributeServerBuilder;
 use class_builder::ClassBuilder;
 pub use container::Container;
+use panduza::task_monitor::NamedTaskHandle;
+use panduza::TaskMonitor;
 
 use crate::{engine::Engine, InstanceSettings};
 use crate::{log_error, Actions, Logger, Notification};
@@ -96,6 +98,10 @@ pub struct Instance {
     ///
     ///
     reset_signal: Arc<Notify>,
+
+    ///
+    ///
+    task_monitor: Arc<std::sync::Mutex<TaskMonitor>>,
 }
 
 impl Instance {
@@ -111,6 +117,29 @@ impl Instance {
         settings: Option<InstanceSettings>,
         notification_channel: Sender<Notification>,
     ) -> Instance {
+        //
+        //
+        let (task_monitor, mut task_monitor_event_receiver) =
+            TaskMonitor::new(format!("INSTANCE/{}", name));
+
+        //
+        tokio::spawn(async move {
+            loop {
+                let event_recv = task_monitor_event_receiver.recv().await;
+                match event_recv {
+                    Some(event) => {
+                        // log_debug!(logger, "TaskMonitor event: {:?}", event);
+                        // Handle the event as needed
+                    }
+                    None => {
+                        // log_warn!(logger, "TaskMonitor pipe closed");
+                        // Handle the error as needed
+                        break;
+                    }
+                }
+            }
+        });
+
         // Create the object
         Instance {
             logger: Logger::new_for_instance(name.clone()),
@@ -122,7 +151,14 @@ impl Instance {
             state_change_notifier: Arc::new(Notify::new()),
             notification_channel: notification_channel,
             reset_signal: Arc::new(Notify::new()),
+            task_monitor: Arc::new(std::sync::Mutex::new(task_monitor)),
         }
+    }
+
+    ///
+    ///
+    pub fn task_monitor_sender(&self) -> Sender<NamedTaskHandle> {
+        self.task_monitor.lock().unwrap().handle_sender()
     }
 
     ///
@@ -288,5 +324,13 @@ impl Container for Instance {
     fn create_attribute<N: Into<String>>(&mut self, name: N) -> AttributeServerBuilder {
         AttributeServerBuilder::new(self.engine.clone(), None, self.notification_channel.clone())
             .with_topic(format!("{}/{}", self.topic, name.into()))
+    }
+
+    /// Override
+    ///
+    fn monitor_task(&self, named_task_handle: NamedTaskHandle) {
+        self.task_monitor_sender()
+            .try_send(named_task_handle)
+            .unwrap();
     }
 }
