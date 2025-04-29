@@ -385,8 +385,13 @@ impl Container for Instance {
     /// Override
     ///
     fn create_attribute<N: Into<String>>(&mut self, name: N) -> AttributeServerBuilder {
-        AttributeServerBuilder::new(self.engine.clone(), None, self.notification_channel.clone())
-            .with_topic(format!("{}/{}", self.topic, name.into()))
+        AttributeServerBuilder::new(
+            self.engine.clone(),
+            None,
+            self.notification_channel.clone(),
+            self.task_monitor_sender().clone(),
+        )
+        .with_topic(format!("{}/{}", self.topic, name.into()))
     }
 
     /// Override

@@ -123,6 +123,7 @@ impl Container for Class {
             self.instance.engine.clone(),
             None,
             self.notification_channel.clone(),
+            self.monitor_task_send.clone(),
         )
         .with_topic(format!("{}/{}", self.topic, name.into()))
     }
