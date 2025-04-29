@@ -2,7 +2,7 @@ use super::attribute_builder::AttributeServerBuilder;
 use super::{class_builder::ClassBuilder, Container};
 use crate::{Error, Instance, Logger, Notification};
 use async_trait::async_trait;
-use panduza::task_monitor::NamedTaskHandle;
+use panduza::task_monitor::{NamedTaskHandle, TaskHandle};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use tokio::sync::mpsc::Sender;
@@ -52,7 +52,7 @@ impl Class {
             enabled: Arc::new(AtomicBool::new(true)),
             notification_channel: notification_channel, // sub_elements: Arc::new(Mutex::new(Vec::new())),
             reset_signal: builder.instance.reset_signal(),
-            monitor_task_send: builder.instance.task_monitor_sender(),
+            monitor_task_send: builder.instance.task_monitor_sender().clone(),
         }
     }
 
@@ -129,7 +129,10 @@ impl Container for Class {
 
     /// Override
     ///
-    fn monitor_task(&self, named_task_handle: NamedTaskHandle) {
-        self.monitor_task_send.try_send(named_task_handle).unwrap();
+    async fn monitor_task(&self, name: String, task_handle: TaskHandle) {
+        self.monitor_task_send
+            .send((name, task_handle))
+            .await
+            .unwrap();
     }
 }

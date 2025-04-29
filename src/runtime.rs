@@ -75,11 +75,12 @@ impl Runtime {
         let (task_monitor, mut task_monitor_event_receiver) = TaskMonitor::new("RUNTIME");
 
         tokio::spawn(async move {
+            let logger = Logger::new_for_runtime();
             loop {
                 let event_recv = task_monitor_event_receiver.recv().await;
                 match event_recv {
                     Some(event) => {
-                        // log_debug!(logger, "TaskMonitor event: {:?}", event);
+                        log_debug!(logger, "TaskMonitor event: {:?}", event);
                         // Handle the event as needed
                     }
                     None => {

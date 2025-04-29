@@ -2,7 +2,7 @@ use super::attribute_builder::AttributeServerBuilder;
 use super::class_builder::ClassBuilder;
 use crate::Logger;
 use async_trait::async_trait;
-use panduza::task_monitor::NamedTaskHandle;
+use panduza::task_monitor::TaskHandle;
 use std::sync::Arc;
 use tokio::sync::Notify;
 
@@ -34,5 +34,5 @@ pub trait Container: Clone {
 
     /// Create a new task
     ///
-    fn monitor_task(&self, named_task_handle: NamedTaskHandle);
+    async fn monitor_task(&self, name: String, task_handle: TaskHandle);
 }
