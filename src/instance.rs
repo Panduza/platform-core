@@ -26,6 +26,49 @@ use crate::StateNotification;
 
 pub use container::Container;
 
+use crate::{engine::Engine, InstanceSettings};
+use crate::{log_error, log_info, Actions, Logger, Notification};
+// use class_builder::ClassBuilder;
+
+use serde::{Deserialize, Serialize};
+use std::{fmt::Display, sync::Arc};
+use tokio::sync::Mutex;
+use tokio::sync::{mpsc::Sender, Notify};
+
+use async_trait::async_trait;
+
+/// States of the main Interface FSM
+///
+#[derive(Default, Debug, Clone, Serialize, Deserialize)]
+pub enum State {
+    Booting,
+    Connecting,
+    Initializating,
+    Running,
+    Warning,
+    Error,
+    Cleaning,
+    Stopping,
+    #[default]
+    Undefined,
+}
+
+impl Display for State {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            State::Booting => write!(f, "Booting"),
+            State::Connecting => write!(f, "Connecting"),
+            State::Initializating => write!(f, "Initializating"),
+            State::Running => write!(f, "Running"),
+            State::Error => write!(f, "Error"),
+            State::Warning => write!(f, "Warning"),
+            State::Cleaning => write!(f, "Cleaning"),
+            State::Stopping => write!(f, "Stopping"),
+            State::Undefined => write!(f, "Undefined"),
+        }
+    }
+}
+
 ///
 ///
 ///
@@ -223,7 +266,7 @@ impl Instance {
     }
 
     pub async fn go_error(&mut self) {
-        // println!("GO ERROR");
+        log_info!(self.logger(), "GO ERROR");
         self.move_to_state(InstanceState::Error).await;
     }
 

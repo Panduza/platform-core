@@ -8,8 +8,8 @@ readme = "README.md"
 [dependencies]
 
 # Panduza Rust Client
-panduza = { git = "https://github.com/Panduza/panduza-rust", tag = "0.0.1" }
-
+panduza = { git = "https://github.com/Panduza/panduza-rust", branch = "main" tag = "0.0.1"}
+panduza = {path = "../panduza-rust"}
 # Main async framework for the platform
 tokio = { version = "1.43.0", features = ["full", "tracing"] }
 # Async trait support
@@ -53,6 +53,9 @@ tracing-subscriber = "0.3.19"
 tracing-appender = "0.2.3"
 # To managed logs in colored format
 colored = "3.0.0"
+
+# to manage async-server tftp errors
+async-tftp = "0.3"
 
 # === feature => usb
 #
