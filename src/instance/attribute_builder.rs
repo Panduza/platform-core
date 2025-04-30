@@ -197,8 +197,13 @@ impl AttributeServerBuilder {
         }));
 
         let (cmd_receiver, att_publisher) = self.common_ops(50).await;
-        let att =
-            EnumAttributeServer::new(topic.clone(), cmd_receiver, att_publisher, choices.clone());
+        let att = EnumAttributeServer::new(
+            topic.clone(),
+            cmd_receiver,
+            att_publisher,
+            self.task_monitor_sender,
+            choices.clone(),
+        );
         Ok(att)
     }
 
@@ -218,7 +223,12 @@ impl AttributeServerBuilder {
         let topic = self.topic.as_ref().unwrap();
         self.r#type = Some(TriggerAttributeServer::r#type());
         let (cmd_receiver, att_publisher) = self.common_ops(50).await;
-        let att = TriggerAttributeServer::new(topic.clone(), cmd_receiver, att_publisher);
+        let att = TriggerAttributeServer::new(
+            topic.clone(),
+            cmd_receiver,
+            att_publisher,
+            self.task_monitor_sender,
+        );
         Ok(att)
     }
 
@@ -228,7 +238,12 @@ impl AttributeServerBuilder {
         let topic = self.topic.as_ref().unwrap();
         self.r#type = Some(VectorF32AttributeServer::r#type());
         let (cmd_receiver, att_publisher) = self.common_ops(50).await;
-        let att = VectorF32AttributeServer::new(topic.clone(), cmd_receiver, att_publisher);
+        let att = VectorF32AttributeServer::new(
+            topic.clone(),
+            cmd_receiver,
+            att_publisher,
+            self.task_monitor_sender,
+        );
         Ok(att)
     }
 
@@ -258,7 +273,8 @@ impl AttributeServerBuilder {
 
         //
         //
-        let att = JsonAttributeServer::new(topic, cmd_receiver, att_publisher);
+        let att =
+            JsonAttributeServer::new(topic, cmd_receiver, att_publisher, self.task_monitor_sender);
 
         // //
         // // Attach the attribute to its parent class if exist
@@ -328,7 +344,12 @@ impl AttributeServerBuilder {
 
         //
         //
-        let att = StringAttributeServer::new(topic, cmd_receiver, att_publisher);
+        let att = StringAttributeServer::new(
+            topic,
+            cmd_receiver,
+            att_publisher,
+            self.task_monitor_sender,
+        );
 
         // //
         // // Attach the attribute to its parent class if exist

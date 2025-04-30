@@ -2,9 +2,11 @@ use crate::Error;
 use crate::Logger;
 use bytes::Bytes;
 use panduza::pubsub::Publisher;
+use panduza::task_monitor::NamedTaskHandle;
 use std::sync::Arc;
 use std::sync::Mutex;
 use tokio::sync::mpsc::Receiver;
+use tokio::sync::mpsc::Sender;
 use tokio::sync::Notify;
 
 #[derive(Default, Debug)]
@@ -78,7 +80,12 @@ impl StringAttributeServer {
 
     ///
     ///
-    pub fn new(topic: String, mut cmd_receiver: Receiver<Bytes>, att_publisher: Publisher) -> Self {
+    pub fn new(
+        topic: String,
+        mut cmd_receiver: Receiver<Bytes>,
+        att_publisher: Publisher,
+        task_monitor_sender: Sender<NamedTaskHandle>,
+    ) -> Self {
         //
         //
         let pack = Arc::new(Mutex::new(StringDataPack::default()));
@@ -86,7 +93,7 @@ impl StringAttributeServer {
         //
         // Subscribe then check for incomming messages
         let pack_2 = pack.clone();
-        tokio::spawn(async move {
+        let handle = tokio::spawn(async move {
             loop {
                 let message = cmd_receiver.recv().await;
                 match message {
@@ -100,6 +107,9 @@ impl StringAttributeServer {
                 }
             }
         });
+        task_monitor_sender
+            .try_send((format!("{}/server/json", &topic), handle))
+            .unwrap();
 
         //
         //

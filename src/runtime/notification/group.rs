@@ -30,7 +30,6 @@ impl NotificationGroup {
     ///
     pub fn push(&mut self, n: Notification) {
         self.elements.push(n);
-        println!("elements {:?}", self.elements.len());
     }
 
     ///
