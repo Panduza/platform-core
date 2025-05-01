@@ -1,7 +1,7 @@
 pub mod notification;
 use crate::engine::EngineBuilder;
 
-use crate::{log_debug, log_trace, Engine, Error, NotificationGroup, ProductionOrder};
+use crate::{log_debug, log_error, log_trace, Engine, Error, NotificationGroup, ProductionOrder};
 use crate::{Factory, Logger};
 use notification::Notification;
 use panduza::TaskMonitor;
@@ -80,8 +80,52 @@ impl Runtime {
                 let event_recv = task_monitor_event_receiver.recv().await;
                 match event_recv {
                     Some(event) => {
-                        log_debug!(logger, "TaskMonitor event: {:?}", event);
-                        // Handle the event as needed
+                        match &event {
+                            //
+                            // An error occurred in the task monitor
+                            panduza::task_monitor::Event::TaskMonitorError(err_msg) => {
+                                log_error!(logger, "Task monitor error: {}", err_msg);
+                            }
+
+                            // Regrouper les traitements d'erreurs similaires
+                            panduza::task_monitor::Event::TaskStopWithPain(event_body)
+                            | panduza::task_monitor::Event::TaskPanicOMG(event_body) => {
+                                // Déterminer le type d'erreur pour le logging
+                                let error_type = match event {
+                                    panduza::task_monitor::Event::TaskStopWithPain(_) => "Error",
+                                    _ => "Panic",
+                                };
+
+                                // Logger l'événement
+                                log_error!(
+                                    logger,
+                                    "{} on task {} - {}",
+                                    error_type,
+                                    event_body.task_name,
+                                    event_body
+                                        .error_message
+                                        .clone()
+                                        .unwrap_or_else(|| "No error details".into())
+                                );
+                            }
+
+                            // Gérer les autres types d'événements
+                            panduza::task_monitor::Event::TaskCreated(event_body) => {
+                                log_trace!(logger, "Task created: {}", event_body.task_name);
+                            }
+
+                            panduza::task_monitor::Event::TaskStopProperly(event_body) => {
+                                log_trace!(
+                                    logger,
+                                    "Task completed successfully: {}",
+                                    event_body.task_name
+                                );
+                            }
+
+                            panduza::task_monitor::Event::NoMoreTask => {
+                                log_trace!(logger, "No more tasks to monitor");
+                            }
+                        }
                     }
                     None => {
                         // log_warn!(logger, "TaskMonitor pipe closed");

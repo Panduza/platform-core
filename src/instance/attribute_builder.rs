@@ -178,7 +178,8 @@ impl AttributeServerBuilder {
             cmd_receiver,
             att_publisher,
             self.task_monitor_sender,
-        );
+        )
+        .await;
         Ok(att)
     }
 

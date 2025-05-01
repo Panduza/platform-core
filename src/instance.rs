@@ -268,10 +268,13 @@ impl Instance {
         *self.state.lock().await = new_state.clone();
 
         // Alert monitoring device "_"
-        self.notification_channel
+        if let Err(err) = self
+            .notification_channel
             .send(StateNotification::new(self.topic.clone(), new_state.clone()).into())
             .await
-            .unwrap();
+        {
+            log_error!(self.logger, "Failed to send state notification: {}", err);
+        }
 
         // Notify FSM
         self.state_change_notifier.notify_one();
@@ -348,9 +351,10 @@ async fn handle_task_monitor_events(
         match event_recv {
             Some(event) => {
                 match &event {
+                    //
+                    // An error occurred in the task monitor
                     panduza::task_monitor::Event::TaskMonitorError(err_msg) => {
                         log_error!(logger, "Task monitor error: {}", err_msg);
-                        // Possible action: mettre l'instance en état d'erreur également
                     }
 
                     // Regrouper les traitements d'erreurs similaires

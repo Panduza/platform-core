@@ -83,7 +83,7 @@ impl BooleanAttributeServer {
 
     ///
     ///
-    pub fn new(
+    pub async fn new(
         topic: String,
         mut cmd_receiver: Receiver<Bytes>,
         att_publisher: Publisher,
@@ -110,8 +110,10 @@ impl BooleanAttributeServer {
                 }
             }
         });
+
         task_monitor_sender
-            .try_send((format!("{}/server/boolean", &topic), handle))
+            .send((format!("{}/server/boolean", &topic), handle))
+            .await
             .unwrap();
 
         //
