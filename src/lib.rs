@@ -43,7 +43,9 @@ pub use tracing::Logger; // only this one must stay at the end (others deprecate
 
 /// Client public export
 ///
+pub use panduza::fbs::number::NumberBuffer;
 pub use panduza::TaskMonitor;
+
 /// The engine is the core object that will handle the connections and the events
 ///
 mod engine;
