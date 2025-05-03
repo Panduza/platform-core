@@ -2,6 +2,7 @@ use super::attribute_builder::AttributeServerBuilder;
 use super::class_builder::ClassBuilder;
 use crate::Logger;
 use async_trait::async_trait;
+use panduza::task_monitor::TaskHandle;
 use std::sync::Arc;
 use tokio::sync::Notify;
 
@@ -30,4 +31,8 @@ pub trait Container: Clone {
     /// Device can directly create some attribute on its root
     ///
     fn create_attribute<N: Into<String>>(&mut self, name: N) -> AttributeServerBuilder;
+
+    /// Create a new task
+    ///
+    async fn monitor_task(&self, name: String, task_handle: TaskHandle);
 }

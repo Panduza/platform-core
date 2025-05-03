@@ -2,13 +2,13 @@ use super::attribute_builder::AttributeServerBuilder;
 use super::{class_builder::ClassBuilder, Container};
 use crate::{Error, Instance, Logger, Notification};
 use async_trait::async_trait;
+use panduza::task_monitor::{NamedTaskHandle, TaskHandle};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use tokio::sync::mpsc::Sender;
 use tokio::sync::Notify;
 
 #[derive(Clone)]
-///
 ///
 ///
 pub struct Class {
@@ -37,6 +37,8 @@ pub struct Class {
     ///
     ///
     reset_signal: Arc<Notify>,
+
+    monitor_task_send: Sender<NamedTaskHandle>,
 }
 
 impl Class {
@@ -50,6 +52,7 @@ impl Class {
             enabled: Arc::new(AtomicBool::new(true)),
             notification_channel: notification_channel, // sub_elements: Arc::new(Mutex::new(Vec::new())),
             reset_signal: builder.instance.reset_signal(),
+            monitor_task_send: builder.instance.task_monitor_sender().clone(),
         }
     }
 
@@ -120,7 +123,17 @@ impl Container for Class {
             self.instance.engine.clone(),
             None,
             self.notification_channel.clone(),
+            self.monitor_task_send.clone(),
         )
         .with_topic(format!("{}/{}", self.topic, name.into()))
+    }
+
+    /// Override
+    ///
+    async fn monitor_task(&self, name: String, task_handle: TaskHandle) {
+        self.monitor_task_send
+            .send((name, task_handle))
+            .await
+            .unwrap();
     }
 }

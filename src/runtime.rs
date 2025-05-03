@@ -1,8 +1,10 @@
 pub mod notification;
 use crate::engine::EngineBuilder;
-use crate::{log_debug, log_trace, Engine, Error, NotificationGroup, ProductionOrder};
+
+use crate::{log_debug, log_error, log_trace, Engine, Error, NotificationGroup, ProductionOrder};
 use crate::{Factory, Logger};
 use notification::Notification;
+use panduza::TaskMonitor;
 use std::sync::{
     atomic::{AtomicBool, Ordering},
     Arc,
@@ -52,6 +54,10 @@ pub struct Runtime {
     ///
     ///
     notification_channel: (Sender<Notification>, Receiver<Notification>),
+
+    ///
+    ///
+    task_monitor: TaskMonitor,
 }
 
 impl Runtime {
@@ -64,6 +70,72 @@ impl Runtime {
         notifications: Arc<std::sync::Mutex<NotificationGroup>>,
         notification_channel: (Sender<Notification>, Receiver<Notification>),
     ) -> Self {
+        //
+        //
+        let (task_monitor, mut task_monitor_event_receiver) = TaskMonitor::new("RUNTIME");
+
+        tokio::spawn(async move {
+            let logger = Logger::new_for_runtime();
+            loop {
+                let event_recv = task_monitor_event_receiver.recv().await;
+                match event_recv {
+                    Some(event) => {
+                        match &event {
+                            //
+                            // An error occurred in the task monitor
+                            panduza::task_monitor::Event::TaskMonitorError(err_msg) => {
+                                log_error!(logger, "Task monitor error: {}", err_msg);
+                            }
+
+                            // Regrouper les traitements d'erreurs similaires
+                            panduza::task_monitor::Event::TaskStopWithPain(event_body)
+                            | panduza::task_monitor::Event::TaskPanicOMG(event_body) => {
+                                // Déterminer le type d'erreur pour le logging
+                                let error_type = match event {
+                                    panduza::task_monitor::Event::TaskStopWithPain(_) => "Error",
+                                    _ => "Panic",
+                                };
+
+                                // Logger l'événement
+                                log_error!(
+                                    logger,
+                                    "{} on task {} - {}",
+                                    error_type,
+                                    event_body.task_name,
+                                    event_body
+                                        .error_message
+                                        .clone()
+                                        .unwrap_or_else(|| "No error details".into())
+                                );
+                            }
+
+                            // Gérer les autres types d'événements
+                            panduza::task_monitor::Event::TaskCreated(event_body) => {
+                                log_trace!(logger, "Task created: {}", event_body.task_name);
+                            }
+
+                            panduza::task_monitor::Event::TaskStopProperly(event_body) => {
+                                log_trace!(
+                                    logger,
+                                    "Task completed successfully: {}",
+                                    event_body.task_name
+                                );
+                            }
+
+                            panduza::task_monitor::Event::NoMoreTask => {
+                                log_trace!(logger, "No more tasks to monitor");
+                            }
+                        }
+                    }
+                    None => {
+                        // log_warn!(logger, "TaskMonitor pipe closed");
+                        // Handle the error as needed
+                        break;
+                    }
+                }
+            }
+        });
+
         Self {
             logger: Logger::new_for_runtime(),
             factory: factory,
@@ -73,6 +145,7 @@ impl Runtime {
             production_order_receiver: Some(po_receiver),
             notifications: notifications,
             notification_channel: notification_channel,
+            task_monitor: task_monitor,
         }
     }
 
@@ -136,23 +209,19 @@ impl Runtime {
 
 
                     //
-                    tokio::spawn(async move {
+                    let task_handle = tokio::spawn(async move {
                         loop {
                             instance.run_fsm().await;
                         }
                     });
 
+                    //
+                    self.task_monitor
+                        .handle_sender()
+                        .send((format!("RT/FSM/{}", name), task_handle))
+                        .await
+                        .unwrap();
 
-                    // self.task_sender
-                    //     .spawn_with_name(
-                    //         format!("{}/monitor", name),
-                    //         async move {
-                    //             monitor.run().await;
-                    //             Ok(())
-                    //         }
-                    //         .boxed(),
-                    //     )
-                    //     .unwrap();
 
                 },
                 notif = self.notification_channel.1.recv() => {

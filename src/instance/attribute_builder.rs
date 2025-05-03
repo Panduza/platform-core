@@ -13,6 +13,7 @@ use crate::Engine;
 use crate::Error;
 use crate::Notification;
 use panduza::pubsub::Publisher;
+use panduza::task_monitor::NamedTaskHandle;
 use serde_json::json;
 use tokio::sync::mpsc::Sender;
 
@@ -45,6 +46,10 @@ pub struct AttributeServerBuilder {
     ///
     ///
     notification_channel: Sender<Notification>,
+
+    ///
+    ///
+    task_monitor_sender: Sender<NamedTaskHandle>,
 }
 
 impl AttributeServerBuilder {
@@ -54,6 +59,7 @@ impl AttributeServerBuilder {
         engine: Engine,
         parent_class: Option<Class>,
         notification_channel: Sender<Notification>,
+        task_monitor_sender: Sender<NamedTaskHandle>,
     ) -> Self {
         Self {
             engine,
@@ -64,6 +70,7 @@ impl AttributeServerBuilder {
             r#type: None,
             info: None,
             notification_channel: notification_channel,
+            task_monitor_sender: task_monitor_sender,
         }
     }
 
@@ -166,7 +173,13 @@ impl AttributeServerBuilder {
         let topic = self.topic.as_ref().unwrap();
         self.r#type = Some(BooleanAttributeServer::r#type());
         let (cmd_receiver, att_publisher) = self.common_ops(50).await;
-        let att = BooleanAttributeServer::new(topic.clone(), cmd_receiver, att_publisher);
+        let att = BooleanAttributeServer::new(
+            topic.clone(),
+            cmd_receiver,
+            att_publisher,
+            self.task_monitor_sender,
+        )
+        .await;
         Ok(att)
     }
 
@@ -185,8 +198,13 @@ impl AttributeServerBuilder {
         }));
 
         let (cmd_receiver, att_publisher) = self.common_ops(50).await;
-        let att =
-            EnumAttributeServer::new(topic.clone(), cmd_receiver, att_publisher, choices.clone());
+        let att = EnumAttributeServer::new(
+            topic.clone(),
+            cmd_receiver,
+            att_publisher,
+            self.task_monitor_sender,
+            choices.clone(),
+        );
         Ok(att)
     }
 
@@ -206,7 +224,12 @@ impl AttributeServerBuilder {
         let topic = self.topic.as_ref().unwrap();
         self.r#type = Some(TriggerAttributeServer::r#type());
         let (cmd_receiver, att_publisher) = self.common_ops(50).await;
-        let att = TriggerAttributeServer::new(topic.clone(), cmd_receiver, att_publisher);
+        let att = TriggerAttributeServer::new(
+            topic.clone(),
+            cmd_receiver,
+            att_publisher,
+            self.task_monitor_sender,
+        );
         Ok(att)
     }
 
@@ -216,7 +239,12 @@ impl AttributeServerBuilder {
         let topic = self.topic.as_ref().unwrap();
         self.r#type = Some(VectorF32AttributeServer::r#type());
         let (cmd_receiver, att_publisher) = self.common_ops(50).await;
-        let att = VectorF32AttributeServer::new(topic.clone(), cmd_receiver, att_publisher);
+        let att = VectorF32AttributeServer::new(
+            topic.clone(),
+            cmd_receiver,
+            att_publisher,
+            self.task_monitor_sender,
+        );
         Ok(att)
     }
 
@@ -246,7 +274,8 @@ impl AttributeServerBuilder {
 
         //
         //
-        let att = JsonAttributeServer::new(topic, cmd_receiver, att_publisher);
+        let att =
+            JsonAttributeServer::new(topic, cmd_receiver, att_publisher, self.task_monitor_sender);
 
         // //
         // // Attach the attribute to its parent class if exist
@@ -316,7 +345,12 @@ impl AttributeServerBuilder {
 
         //
         //
-        let att = StringAttributeServer::new(topic, cmd_receiver, att_publisher);
+        let att = StringAttributeServer::new(
+            topic,
+            cmd_receiver,
+            att_publisher,
+            self.task_monitor_sender,
+        );
 
         // //
         // // Attach the attribute to its parent class if exist

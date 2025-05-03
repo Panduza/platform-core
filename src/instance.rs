@@ -1,28 +1,31 @@
-// mod inner;
-
 pub mod actions;
 pub mod attribute_builder;
 pub mod class;
 pub mod class_builder;
 pub mod container;
 pub mod server;
-// pub mod element;
-// pub mod monitor;
-
-use attribute_builder::AttributeServerBuilder;
-use class_builder::ClassBuilder;
-pub use container::Container;
-
-use crate::{engine::Engine, InstanceSettings};
-use crate::{log_error, Actions, Logger, Notification};
-// use class_builder::ClassBuilder;
-
-use serde::{Deserialize, Serialize};
-use std::{fmt::Display, sync::Arc};
-use tokio::sync::Mutex;
-use tokio::sync::{mpsc::Sender, Notify};
 
 use async_trait::async_trait;
+use attribute_builder::AttributeServerBuilder;
+use class_builder::ClassBuilder;
+use panduza::task_monitor::{NamedTaskHandle, TaskHandle};
+use panduza::TaskMonitor;
+use serde::{Deserialize, Serialize};
+use std::{fmt::Display, sync::Arc};
+use tokio::sync::mpsc::Sender;
+use tokio::sync::{Mutex, Notify};
+
+use crate::engine::Engine;
+use crate::log_debug;
+use crate::log_error;
+use crate::log_trace;
+use crate::Actions;
+use crate::InstanceSettings;
+use crate::Logger;
+use crate::Notification;
+use crate::StateNotification;
+
+pub use container::Container;
 
 /// States of the main Interface FSM
 ///
@@ -96,6 +99,10 @@ pub struct Instance {
     ///
     ///
     reset_signal: Arc<Notify>,
+
+    ///
+    ///
+    task_monitor: TaskMonitor,
 }
 
 impl Instance {
@@ -111,18 +118,44 @@ impl Instance {
         settings: Option<InstanceSettings>,
         notification_channel: Sender<Notification>,
     ) -> Instance {
-        // Create the object
-        Instance {
+        //
+        // Create a task monitor for the instance
+        let (task_monitor, task_monitor_event_receiver) =
+            TaskMonitor::new(format!("INSTANCE/{}", name));
+
+        //
+        // Create instance
+        let instance = Instance {
             logger: Logger::new_for_instance(name.clone()),
             engine: engine.clone(),
             topic: format!("{}/{}", engine.root_topic(), name),
-            settings: settings,
+            settings,
             actions: Arc::new(Mutex::new(actions)),
             state: Arc::new(Mutex::new(State::Booting)),
             state_change_notifier: Arc::new(Notify::new()),
-            notification_channel: notification_channel,
+            notification_channel: notification_channel.clone(),
             reset_signal: Arc::new(Notify::new()),
-        }
+            task_monitor: task_monitor,
+        };
+
+        //
+        // Spawn task monitor handler with captures of what's needed
+        tokio::spawn(handle_task_monitor_events(
+            task_monitor_event_receiver,
+            instance.logger.clone(),
+            instance.state.clone(),
+            instance.state_change_notifier.clone(),
+            notification_channel.clone(),
+            instance.topic.clone(),
+        ));
+
+        instance
+    }
+
+    ///
+    ///
+    pub fn task_monitor_sender(&self) -> Sender<NamedTaskHandle> {
+        self.task_monitor.handle_sender()
     }
 
     ///
@@ -188,6 +221,7 @@ impl Instance {
                 }
                 State::Running => {} // do nothing, watch for inner tasks
                 State::Error => {
+                    self.task_monitor.cancel_all_monitored_tasks().await;
                     //
                     // Wait before reboot
                     self.actions
@@ -233,18 +267,14 @@ impl Instance {
         // Set the new state
         *self.state.lock().await = new_state.clone();
 
-        // println!("new state !!! {:?}", new_state.clone());
-
         // Alert monitoring device "_"
-        // if let Some(r_notifier) = &mut self.r_notifier {
-        //     r_notifier
-        //         .try_send(StateNotification::new(self.topic.clone(), new_state.clone()).into())
-        //         .unwrap();
-        // }
-        // else {
-        //     self.logger
-        //         .debug("!!!!!!! DEBUG !!!!!!! r_notifier is 'None'");
-        // }
+        if let Err(err) = self
+            .notification_channel
+            .send(StateNotification::new(self.topic.clone(), new_state.clone()).into())
+            .await
+        {
+            log_error!(self.logger, "Failed to send state notification: {}", err);
+        }
 
         // Notify FSM
         self.state_change_notifier.notify_one();
@@ -286,7 +316,105 @@ impl Container for Instance {
     /// Override
     ///
     fn create_attribute<N: Into<String>>(&mut self, name: N) -> AttributeServerBuilder {
-        AttributeServerBuilder::new(self.engine.clone(), None, self.notification_channel.clone())
-            .with_topic(format!("{}/{}", self.topic, name.into()))
+        AttributeServerBuilder::new(
+            self.engine.clone(),
+            None,
+            self.notification_channel.clone(),
+            self.task_monitor_sender().clone(),
+        )
+        .with_topic(format!("{}/{}", self.topic, name.into()))
+    }
+
+    /// Override
+    ///
+    async fn monitor_task(&self, name: String, task_handle: TaskHandle) {
+        self.task_monitor_sender()
+            .send((name, task_handle))
+            .await
+            .unwrap();
+    }
+}
+
+/// Handle task monitor events
+///
+async fn handle_task_monitor_events(
+    mut event_receiver: tokio::sync::mpsc::Receiver<panduza::task_monitor::Event>,
+    logger: Logger,
+    state: Arc<Mutex<State>>,
+    state_change_notifier: Arc<Notify>,
+    notification_channel: Sender<Notification>,
+    topic: String,
+) {
+    loop {
+        let event_recv = event_receiver.recv().await;
+
+        match event_recv {
+            Some(event) => {
+                match &event {
+                    //
+                    // An error occurred in the task monitor
+                    panduza::task_monitor::Event::TaskMonitorError(err_msg) => {
+                        log_error!(logger, "Task monitor error: {}", err_msg);
+                    }
+
+                    // Regrouper les traitements d'erreurs similaires
+                    panduza::task_monitor::Event::TaskStopWithPain(event_body)
+                    | panduza::task_monitor::Event::TaskPanicOMG(event_body) => {
+                        // Déterminer le type d'erreur pour le logging
+                        let error_type = match event {
+                            panduza::task_monitor::Event::TaskStopWithPain(_) => "Error",
+                            _ => "Panic",
+                        };
+
+                        // Logger l'événement
+                        log_error!(
+                            logger,
+                            "{} on task {} - {}",
+                            error_type,
+                            event_body.task_name,
+                            event_body
+                                .error_message
+                                .clone()
+                                .unwrap_or_else(|| "No error details".into())
+                        );
+
+                        // Mettre à jour l'état
+                        *state.lock().await = State::Error;
+
+                        // Envoyer la notification
+                        if let Err(err) = notification_channel
+                            .send(StateNotification::new(topic.clone(), State::Error).into())
+                            .await
+                        {
+                            log_error!(logger, "Failed to send notification: {}", err);
+                        }
+
+                        // Notifier la machine à états
+                        state_change_notifier.notify_one();
+                    }
+
+                    // Gérer les autres types d'événements
+                    panduza::task_monitor::Event::TaskCreated(event_body) => {
+                        log_trace!(logger, "Task created: {}", event_body.task_name);
+                    }
+
+                    panduza::task_monitor::Event::TaskStopProperly(event_body) => {
+                        log_trace!(
+                            logger,
+                            "Task completed successfully: {}",
+                            event_body.task_name
+                        );
+                    }
+
+                    panduza::task_monitor::Event::NoMoreTask => {
+                        log_trace!(logger, "No more tasks to monitor");
+                    }
+                }
+            }
+            None => {
+                log_debug!(logger, "TaskMonitor channel closed, stopping monitor task");
+                break;
+            }
+        }
     }
 }
