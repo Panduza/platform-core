@@ -80,7 +80,7 @@ impl StringAttributeServer {
 
     ///
     ///
-    pub fn new(
+    pub async fn new(
         topic: String,
         mut cmd_receiver: Receiver<Bytes>,
         att_publisher: Publisher,
@@ -108,7 +108,8 @@ impl StringAttributeServer {
             }
         });
         task_monitor_sender
-            .try_send((format!("{}/server/json", &topic), handle))
+            .send((format!("SERVER/STRING >> {}", &topic), handle))
+            .await
             .unwrap();
 
         //

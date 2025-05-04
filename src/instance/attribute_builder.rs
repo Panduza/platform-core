@@ -315,7 +315,9 @@ impl AttributeServerBuilder {
             min,
             max,
             decimals,
-        );
+            self.task_monitor_sender,
+        )
+        .await;
         Ok(att)
     }
 
@@ -350,7 +352,8 @@ impl AttributeServerBuilder {
             cmd_receiver,
             att_publisher,
             self.task_monitor_sender,
-        );
+        )
+        .await;
 
         // //
         // // Attach the attribute to its parent class if exist
