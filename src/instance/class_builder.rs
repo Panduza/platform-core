@@ -59,10 +59,6 @@ impl ClassBuilder {
         let bis = self.topic.clone();
 
         //
-        // Debug
-        println!("channel notification !!");
-
-        //
         //
         self.notification_channel
             .send(ClassNotification::new(bis, self.tags.clone()).into())
