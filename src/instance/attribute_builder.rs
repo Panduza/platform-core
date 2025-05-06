@@ -1,4 +1,5 @@
 use super::server::boolean::BooleanAttributeServer;
+use super::server::bytes::BytesAttributeServer;
 use super::server::json::JsonAttributeServer;
 use super::server::notification_v0::NotificationAttributeServer;
 use super::server::r#enum::EnumAttributeServer;
@@ -398,4 +399,42 @@ impl AttributeServerBuilder {
 
         Ok(att)
     }
+ 
+    /// BYTES
+    ///
+    pub async fn start_as_bytes(mut self) -> Result<BytesAttributeServer, Error> {
+        //
+        //
+        self.r#type = Some(BytesAttributeServer::r#type());
+
+        //
+        //
+        self.send_creation_notification().await;
+
+        let topic = self.topic.unwrap();
+
+        let cmd_receiver: tokio::sync::mpsc::Receiver<bytes::Bytes> = self
+            .engine
+            .register_listener(format!("{}/cmd", topic), 50)
+            .await
+            .unwrap();
+
+        let att_publisher = self
+            .engine
+            .register_publisher(format!("{}/att", topic), true)
+            .unwrap();
+
+        //
+        //
+        let att = BytesAttributeServer::new(topic, cmd_receiver, att_publisher);
+
+        // //
+        // // Attach the attribute to its parent class if exist
+        // if let Some(mut parent_class) = self.parent_class {
+        //     parent_class.push_sub_element(att.clone_as_element()).await;
+        // }
+
+        Ok(att)
+    }
+
 }

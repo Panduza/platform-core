@@ -1,4 +1,5 @@
 pub mod boolean;
+pub mod bytes;
 pub mod r#enum;
 pub mod json;
 pub mod notification_v0;
