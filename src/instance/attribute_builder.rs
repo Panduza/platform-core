@@ -1,8 +1,10 @@
 use super::server::boolean::BooleanAttributeServer;
 use super::server::json::JsonAttributeServer;
+use super::server::notification_v0::NotificationAttributeServer;
 use super::server::r#enum::EnumAttributeServer;
 use super::server::sample::SampleAttributeServer;
 use super::server::si::SiAttributeServer;
+use super::server::status_v0::StatusAttributeServer;
 use super::server::string::StringAttributeServer;
 use super::server::trigger_v0::TriggerAttributeServer;
 use super::server::vector_f32_v0::VectorF32AttributeServer;
@@ -205,6 +207,38 @@ impl AttributeServerBuilder {
             self.task_monitor_sender,
             choices.clone(),
         );
+        Ok(att)
+    }
+
+    /// NOTIFICATION
+    ///
+    pub async fn __start_as_notification(mut self) -> Result<NotificationAttributeServer, Error> {
+        let topic = self.topic.as_ref().unwrap();
+        self.r#type = Some(NotificationAttributeServer::r#type());
+        let (cmd_receiver, att_publisher) = self.common_ops(50).await;
+        let att = NotificationAttributeServer::new(
+            topic.clone(),
+            cmd_receiver,
+            att_publisher,
+            self.task_monitor_sender,
+        )
+        .await;
+        Ok(att)
+    }
+
+    /// STATUS
+    ///
+    pub async fn __start_as_status(mut self) -> Result<StatusAttributeServer, Error> {
+        let topic = self.topic.as_ref().unwrap();
+        self.r#type = Some(StatusAttributeServer::r#type());
+        let (cmd_receiver, att_publisher) = self.common_ops(50).await;
+        let att = StatusAttributeServer::new(
+            topic.clone(),
+            cmd_receiver,
+            att_publisher,
+            self.task_monitor_sender,
+        )
+        .await;
         Ok(att)
     }
 

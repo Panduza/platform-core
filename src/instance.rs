@@ -9,9 +9,8 @@ use async_trait::async_trait;
 use attribute_builder::AttributeServerBuilder;
 use class_builder::ClassBuilder;
 use panduza::task_monitor::{NamedTaskHandle, TaskHandle};
-use panduza::TaskMonitor;
-use serde::{Deserialize, Serialize};
-use std::{fmt::Display, sync::Arc};
+use panduza::{InstanceState, TaskMonitor};
+use std::sync::Arc;
 use tokio::sync::mpsc::Sender;
 use tokio::sync::{Mutex, Notify};
 
@@ -26,38 +25,6 @@ use crate::Notification;
 use crate::StateNotification;
 
 pub use container::Container;
-
-/// States of the main Interface FSM
-///
-#[derive(Default, Debug, Clone, Serialize, Deserialize)]
-pub enum State {
-    Booting,
-    Connecting,
-    Initializating,
-    Running,
-    Warning,
-    Error,
-    Cleaning,
-    Stopping,
-    #[default]
-    Undefined,
-}
-
-impl Display for State {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        match self {
-            State::Booting => write!(f, "Booting"),
-            State::Connecting => write!(f, "Connecting"),
-            State::Initializating => write!(f, "Initializating"),
-            State::Running => write!(f, "Running"),
-            State::Error => write!(f, "Error"),
-            State::Warning => write!(f, "Warning"),
-            State::Cleaning => write!(f, "Cleaning"),
-            State::Stopping => write!(f, "Stopping"),
-            State::Undefined => write!(f, "Undefined"),
-        }
-    }
-}
 
 ///
 ///
@@ -86,7 +53,7 @@ pub struct Instance {
 
     /// State of the instance
     ///
-    state: Arc<Mutex<State>>,
+    state: Arc<Mutex<InstanceState>>,
 
     /// Notifier for state change
     ///
@@ -131,7 +98,7 @@ impl Instance {
             topic: format!("{}/{}", engine.root_topic(), name),
             settings,
             actions: Arc::new(Mutex::new(actions)),
-            state: Arc::new(Mutex::new(State::Booting)),
+            state: Arc::new(Mutex::new(InstanceState::Booting)),
             state_change_notifier: Arc::new(Notify::new()),
             notification_channel: notification_channel.clone(),
             reset_signal: Arc::new(Notify::new()),
@@ -177,7 +144,7 @@ impl Instance {
         //
         // First start by booting the device to give him a connection with the info_pack
         // and allow the InfoDevice to send device information on MQTT
-        self.move_to_state(State::Booting).await;
+        self.move_to_state(InstanceState::Booting).await;
 
         //
         // Start the main loop of the device
@@ -191,7 +158,7 @@ impl Instance {
 
             // Perform state task
             match stateee {
-                State::Booting => {
+                InstanceState::Booting => {
                     // if let Some(mut info_pack) = self.info_pack.clone() {
                     //     self.logger.debug("FSM try to add_deivce in info pack");
                     //     self.info_dyn_dev_status = Some(info_pack.add_device(self.name()).await);
@@ -199,10 +166,10 @@ impl Instance {
                     // } else {
                     //     self.logger.debug("FSM NO INFO PACK !");
                     // }
-                    self.move_to_state(State::Initializating).await;
+                    self.move_to_state(InstanceState::Initializating).await;
                 }
-                State::Connecting => {} // wait for reactor signal
-                State::Initializating => {
+                InstanceState::Connecting => {} // wait for reactor signal
+                InstanceState::Initializating => {
                     //
                     // Try to mount the device
                     let mount_result = self.actions.lock().await.mount(self.clone()).await;
@@ -211,16 +178,16 @@ impl Instance {
                     match mount_result {
                         Ok(_) => {
                             self.logger.debug("FSM Mount Success ");
-                            self.move_to_state(State::Running).await;
+                            self.move_to_state(InstanceState::Running).await;
                         }
                         Err(e) => {
                             log_error!(self.logger, "Instance Mount Failure '{:?}'", e);
-                            self.move_to_state(State::Error).await;
+                            self.move_to_state(InstanceState::Error).await;
                         }
                     }
                 }
-                State::Running => {} // do nothing, watch for inner tasks
-                State::Error => {
+                InstanceState::Running => {} // do nothing, watch for inner tasks
+                InstanceState::Error => {
                     self.task_monitor.cancel_all_monitored_tasks().await;
                     //
                     // Wait before reboot
@@ -230,12 +197,12 @@ impl Instance {
                         .wait_reboot_event(self.clone())
                         .await;
                     self.logger.info("try to reboot");
-                    self.move_to_state(State::Initializating).await;
+                    self.move_to_state(InstanceState::Initializating).await;
                 }
-                State::Warning => {}
-                State::Cleaning => {}
-                State::Stopping => {}
-                State::Undefined => {}
+                InstanceState::Warning => {}
+                InstanceState::Cleaning => {}
+                InstanceState::Stopping => {}
+                InstanceState::Undefined => {}
             }
         }
 
@@ -257,13 +224,13 @@ impl Instance {
 
     pub async fn go_error(&mut self) {
         // println!("GO ERROR");
-        self.move_to_state(State::Error).await;
+        self.move_to_state(InstanceState::Error).await;
     }
 
     ///
     /// Function to change the current state of the device FSM
     ///
-    pub async fn move_to_state(&mut self, new_state: State) {
+    pub async fn move_to_state(&mut self, new_state: InstanceState) {
         // Set the new state
         *self.state.lock().await = new_state.clone();
 
@@ -340,7 +307,7 @@ impl Container for Instance {
 async fn handle_task_monitor_events(
     mut event_receiver: tokio::sync::mpsc::Receiver<panduza::task_monitor::Event>,
     logger: Logger,
-    state: Arc<Mutex<State>>,
+    state: Arc<Mutex<InstanceState>>,
     state_change_notifier: Arc<Notify>,
     notification_channel: Sender<Notification>,
     topic: String,
@@ -379,11 +346,13 @@ async fn handle_task_monitor_events(
                         );
 
                         // Mettre à jour l'état
-                        *state.lock().await = State::Error;
+                        *state.lock().await = InstanceState::Error;
 
                         // Envoyer la notification
                         if let Err(err) = notification_channel
-                            .send(StateNotification::new(topic.clone(), State::Error).into())
+                            .send(
+                                StateNotification::new(topic.clone(), InstanceState::Error).into(),
+                            )
                             .await
                         {
                             log_error!(logger, "Failed to send notification: {}", err);
