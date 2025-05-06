@@ -141,6 +141,17 @@ impl NotificationAttributeServer {
         Ok(())
     }
 
+    /// Set the buffer
+    ///
+    pub async fn set_buffer(&self, buffer: NotificationBuffer) -> Result<(), Error> {
+        // Send the command
+        self.att_publisher
+            .publish(buffer.take_data())
+            .await
+            .unwrap();
+        Ok(())
+    }
+
     /// Get the value of the attribute
     /// If None, the first value is not yet received
     ///

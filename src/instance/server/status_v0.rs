@@ -1,6 +1,7 @@
 use crate::Error;
 use crate::Logger;
 use bytes::Bytes;
+use panduza::fbs::status_v0::InstanceStatusBuffer;
 use panduza::fbs::status_v0::StatusBuffer;
 use panduza::pubsub::Publisher;
 use panduza::task_monitor::NamedTaskHandle;
@@ -126,14 +127,14 @@ impl StatusAttributeServer {
 
     /// Set the value of the attribute
     ///
-    // pub async fn set(&self, refresh: f32) -> Result<(), Error> {
-    //     // Wrap value into payload
-    //     let pyl = StatusBuffer::from_values(refresh, 0, None, None);
+    pub async fn set(&self, all_status: Vec<InstanceStatusBuffer>) -> Result<(), Error> {
+        // Wrap value into payload
+        let pyl = StatusBuffer::from_args(all_status);
 
-    //     // Send the command
-    //     self.att_publisher.publish(pyl.take_data()).await.unwrap();
-    //     Ok(())
-    // }
+        // Send the command
+        self.att_publisher.publish(pyl.take_data()).await.unwrap();
+        Ok(())
+    }
 
     /// Get the value of the attribute
     /// If None, the first value is not yet received
