@@ -9,7 +9,8 @@ readme = "README.md"
 
 # Panduza Rust Client
 # panduza = { git = "https://github.com/Panduza/panduza-rust", branch = "main" }
-panduza = { path = "C:/Users/rodriguez.NET/Documents/workspace/50-PROJET/XX-XXXX-PZA/panduza-rust" }
+panduza = { path = "C:/Users/xavie/workspace/panduza-rust" }
+# panduza = { path = "C:/Users/rodriguez.NET/Documents/workspace/50-PROJET/XX-XXXX-PZA/panduza-rust" }
 
 # Main async framework for the platform
 tokio = { version = "1.43.0", features = ["full", "tracing"] }

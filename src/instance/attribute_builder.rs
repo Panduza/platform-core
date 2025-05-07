@@ -45,7 +45,7 @@ pub struct AttributeServerBuilder {
 
     pub info: Option<String>,
 
-    ///
+    /// Channel to send notifications
     ///
     notification_channel: Sender<Notification>,
 
@@ -68,7 +68,7 @@ impl AttributeServerBuilder {
             parent_class,
             topic: None,
             settings: None,
-            mode: None,
+            mode: Some(AttributeMode::ReadOnly),
             r#type: None,
             info: None,
             notification_channel: notification_channel,
@@ -180,6 +180,7 @@ impl AttributeServerBuilder {
             cmd_receiver,
             att_publisher,
             self.task_monitor_sender,
+            self.notification_channel.clone(),
         )
         .await;
         Ok(att)
