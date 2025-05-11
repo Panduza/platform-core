@@ -41,9 +41,17 @@ pub use error::Error;
 pub mod tracing;
 pub use tracing::Logger; // only this one must stay at the end (others deprecated)
 
+pub use panduza::fbs::notification_v0::NotificationBuffer;
+pub use panduza::fbs::notification_v0::NotificationType;
+pub use panduza::InstanceState;
+
 /// Client public export
 ///
+pub use panduza::fbs::number::NumberBuffer;
+pub use panduza::fbs::status_v0::InstanceStatusBuffer;
+pub use panduza::fbs::status_v0::StatusBuffer;
 pub use panduza::TaskMonitor;
+
 /// The engine is the core object that will handle the connections and the events
 ///
 mod engine;

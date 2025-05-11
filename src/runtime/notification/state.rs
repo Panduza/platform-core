@@ -1,5 +1,5 @@
 use super::Notification;
-use crate::instance::State;
+use panduza::InstanceState;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -10,13 +10,13 @@ pub struct StateNotification {
 
     /// State of the instance
     ///
-    pub state: State,
+    pub state: InstanceState,
 }
 
 impl StateNotification {
     /// Create new object
     ///
-    pub fn new(name: String, state: State) -> Self {
+    pub fn new(name: String, state: InstanceState) -> Self {
         Self {
             topic: name,
             state: state,

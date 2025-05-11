@@ -1,5 +1,7 @@
+use crate::AlertNotification;
 use crate::Error;
 use crate::Logger;
+use crate::Notification;
 use bytes::Bytes;
 use panduza::pubsub::Publisher;
 use panduza::task_monitor::NamedTaskHandle;
@@ -55,6 +57,8 @@ pub struct BooleanAttributeServer {
     ///
     logger: Logger,
 
+    topic: String,
+
     ///
     ///
     att_publisher: Publisher,
@@ -66,6 +70,10 @@ pub struct BooleanAttributeServer {
     ///
     ///
     update_notifier: Arc<Notify>,
+
+    /// Channel to send notifications
+    ///
+    notification_channel: Sender<Notification>,
 }
 
 impl BooleanAttributeServer {
@@ -88,6 +96,7 @@ impl BooleanAttributeServer {
         mut cmd_receiver: Receiver<Bytes>,
         att_publisher: Publisher,
         task_monitor_sender: Sender<NamedTaskHandle>,
+        notification_channel: Sender<Notification>,
     ) -> Self {
         //
         //
@@ -121,9 +130,11 @@ impl BooleanAttributeServer {
         let n = pack.lock().unwrap().update_notifier();
         Self {
             logger: Logger::new_for_attribute_from_topic(topic.clone()),
+            topic: topic.clone(),
             att_publisher: att_publisher,
             pack: pack,
             update_notifier: n,
+            notification_channel: notification_channel,
         }
     }
 
@@ -149,5 +160,13 @@ impl BooleanAttributeServer {
     ///
     pub async fn wait_for_commands(&self) {
         self.update_notifier.notified().await;
+    }
+
+    ///
+    ///
+    pub async fn trigger_alert<T: Into<String>>(&self, message: T) {
+        let notification =
+            Notification::Alert(AlertNotification::new(self.topic.clone(), message.into()));
+        self.notification_channel.send(notification).await.unwrap();
     }
 }

@@ -4,10 +4,12 @@ use crate::Logger;
 use bytes::Bytes;
 use panduza::fbs::number::NumberBuffer;
 use panduza::pubsub::Publisher;
+use panduza::task_monitor::NamedTaskHandle;
 use std::str;
 use std::sync::Arc;
 use std::sync::Mutex;
 use tokio::sync::mpsc::Receiver;
+use tokio::sync::mpsc::Sender;
 use tokio::sync::Notify;
 
 #[derive(Default, Debug)]
@@ -97,7 +99,7 @@ impl SiAttributeServer {
 
     ///
     ///
-    pub fn new<N: Into<String>>(
+    pub async fn new<N: Into<String>>(
         topic: String,
         mut cmd_receiver: Receiver<Bytes>,
         att_publisher: Publisher,
@@ -105,6 +107,7 @@ impl SiAttributeServer {
         min: f64,
         max: f64,
         decimals: usize,
+        task_monitor_sender: Sender<NamedTaskHandle>,
     ) -> Self {
         //
         //
@@ -113,7 +116,7 @@ impl SiAttributeServer {
         //
         // Subscribe then check for incomming messages
         let pack_2 = pack.clone();
-        tokio::spawn(async move {
+        let handle = tokio::spawn(async move {
             loop {
                 let message = cmd_receiver.recv().await;
                 match message {
@@ -128,6 +131,11 @@ impl SiAttributeServer {
                 }
             }
         });
+
+        task_monitor_sender
+            .send((format!("SERVER/SI >> {}", &topic), handle))
+            .await
+            .unwrap();
 
         //
         //
