@@ -224,7 +224,7 @@ impl Runtime {
                 },
                 notif = self.notification_channel.1.recv() => {
                     log_trace!(self.logger,  "NOTIF [{:?}]", notif );
-                    self.notifications.lock().unwrap().push(notif.unwrap());
+                    self.notifications.lock().unwrap().push(notif.unwrap()); //serait la source du problème
                 },
 
             }

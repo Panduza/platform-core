@@ -3,7 +3,6 @@ use crate::Error;
 use crate::Logger;
 use bytes::Bytes;
 use panduza::fbs::number::NumberBuffer;
-use panduza::pubsub::Publisher;
 use panduza::task_monitor::NamedTaskHandle;
 use std::str;
 use std::sync::Arc;
@@ -11,6 +10,10 @@ use std::sync::Mutex;
 use tokio::sync::mpsc::Receiver;
 use tokio::sync::mpsc::Sender;
 use tokio::sync::Notify;
+use zenoh::handlers::FifoChannelHandler;
+use zenoh::pubsub::Subscriber;
+use zenoh::sample::Sample;
+use zenoh::session::Session;
 
 #[derive(Default, Debug)]
 struct SiDataPack {
@@ -55,9 +58,13 @@ pub struct SiAttributeServer {
     ///
     logger: Logger,
 
+    /// Topic
+    ///
+    topic: String,
+
     ///
     ///
-    att_publisher: Publisher,
+    session: Session,
 
     /// Inner server implementation
     ///
@@ -82,6 +89,10 @@ pub struct SiAttributeServer {
     ///
     ///
     decimals: usize,
+
+    /// query value
+    ///
+    current_value: Arc<Mutex<NumberBuffer>>,
 }
 
 impl SiAttributeServer {
@@ -100,9 +111,9 @@ impl SiAttributeServer {
     ///
     ///
     pub async fn new<N: Into<String>>(
+        session: Session,
         topic: String,
-        mut cmd_receiver: Receiver<Bytes>,
-        att_publisher: Publisher,
+        mut cmd_receiver: Subscriber<FifoChannelHandler<Sample>>,
         unit: N,
         min: f64,
         max: f64,
@@ -112,24 +123,42 @@ impl SiAttributeServer {
         //
         //
         let pack = Arc::new(Mutex::new(SiDataPack::default()));
+        let query_value = Arc::new(Mutex::new(NumberBuffer::default()));
+
+        // create a queryable to get value at initialization
+        //
+        let topic_clone = topic.clone();
+        let session_clone = session.clone();
+        let query_value_clone = query_value.clone();
+        tokio::spawn(async move {
+            let queryable = session_clone
+                .declare_queryable(format!("{}/att", topic_clone.clone()))
+                .await
+                .unwrap();
+
+            while let Ok(query) = queryable.recv_async().await {
+                let value = query_value_clone.lock().unwrap().clone(); // Clone the value
+                let pyl = value.raw_data();
+                query
+                    .reply(format!("{}/att", topic_clone.clone()), pyl)
+                    .await
+                    .unwrap();
+            }
+        });
 
         //
         // Subscribe then check for incomming messages
         let pack_2 = pack.clone();
         let handle = tokio::spawn(async move {
-            loop {
-                let message = cmd_receiver.recv().await;
-                match message {
-                    Some(data) => {
-                        // Push into pack
-                        pack_2
-                            .lock()
-                            .unwrap()
-                            .push(NumberBuffer::from_raw_data(data));
-                    }
-                    None => todo!(),
-                }
+            while let Ok(sample) = cmd_receiver.recv_async().await {
+                let value: Bytes = Bytes::copy_from_slice(&sample.payload().to_bytes());
+                // Push into pack
+                pack_2
+                    .lock()
+                    .unwrap()
+                    .push(NumberBuffer::from_raw_data(value));
             }
+            Ok(())
         });
 
         task_monitor_sender
@@ -142,19 +171,24 @@ impl SiAttributeServer {
         let n = pack.lock().unwrap().update_notifier();
         Self {
             logger: Logger::new_for_attribute_from_topic(topic.clone()),
-            att_publisher: att_publisher,
+            session: session,
+            topic: topic,
             pack: pack,
             update_notifier: n.into(),
             unit: unit.into(),
             min: min,
             max: max,
             decimals: decimals,
+            current_value: query_value,
         }
     }
 
     /// Set the value of the attribute
     ///
     pub async fn set(&self, value: NumberBuffer) -> Result<(), Error> {
+        // update the current queriable value
+        *self.current_value.lock().unwrap() = value.clone();
+
         // Wrap value into payload
         let pyl = value.raw_data();
 
@@ -179,7 +213,10 @@ impl SiAttributeServer {
         }
 
         // Send the command
-        self.att_publisher.publish(pyl).await.unwrap();
+        self.session
+            .put(format!("{}/att", self.topic.clone()), pyl)
+            .await
+            .unwrap();
         Ok(())
     }
 

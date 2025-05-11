@@ -1,8 +1,6 @@
 use crate::Error;
 use crate::Logger;
 use bytes::Bytes;
-use panduza::fbs::status_v0::InstanceStatusBuffer;
-use panduza::fbs::status_v0::StatusBuffer;
 // use panduza::pubsub::Publisher;
 use panduza::task_monitor::NamedTaskHandle;
 use std::sync::Arc;
@@ -15,27 +13,27 @@ use zenoh::sample::Sample;
 use zenoh::Session;
 
 #[derive(Default, Debug)]
-struct StatusDataPack {
+struct NumberDataPack {
     /// Queue of value (need to be poped)
     ///
-    queue: Vec<StatusBuffer>,
+    queue: Vec<u32>,
 
     ///
     ///
     update_notifier: Arc<Notify>,
 }
 
-impl StatusDataPack {
+impl NumberDataPack {
     ///
     ///
-    pub fn push(&mut self, v: StatusBuffer) {
+    pub fn push(&mut self, v: u32) {
         self.queue.push(v);
         self.update_notifier.notify_waiters();
     }
 
     ///
     ///
-    pub fn pop(&mut self) -> Option<StatusBuffer> {
+    pub fn pop(&mut self) -> Option<u32> {
         if self.queue.is_empty() {
             return None;
         }
@@ -52,7 +50,7 @@ impl StatusDataPack {
 ///
 ///
 #[derive(Clone)]
-pub struct StatusAttributeServer {
+pub struct NumberAttributeServer {
     /// Local logger
     ///
     logger: Logger,
@@ -60,25 +58,24 @@ pub struct StatusAttributeServer {
     ///
     ///
     session: Session,
-
-    /// topic
-    ///
-    topic: String,
-
     /// Inner server implementation
     ///
-    pack: Arc<Mutex<StatusDataPack>>,
+    pack: Arc<Mutex<NumberDataPack>>,
 
     ///
     ///
     update_notifier: Arc<Notify>,
 
+    /// topic
+    ///
+    topic: String,
+
     /// query value
     ///
-    current_value: Arc<Mutex<StatusBuffer>>,
+    current_value: Arc<Mutex<u32>>,
 }
 
-impl StatusAttributeServer {
+impl NumberAttributeServer {
     /// Logger getter
     ///
     pub fn logger(&self) -> &Logger {
@@ -88,7 +85,7 @@ impl StatusAttributeServer {
     ///
     ///
     pub fn r#type() -> String {
-        "status-v0".to_string()
+        "number".to_string()
     }
 
     ///
@@ -101,8 +98,8 @@ impl StatusAttributeServer {
     ) -> Self {
         //
         //
-        let pack = Arc::new(Mutex::new(StatusDataPack::default()));
-        let query_value = Arc::new(Mutex::new(StatusBuffer::default()));
+        let pack = Arc::new(Mutex::new(NumberDataPack::default()));
+        let query_value = Arc::new(Mutex::new(u32::default()));
 
         // create a queryable to get value at initialization
         //
@@ -117,7 +114,7 @@ impl StatusAttributeServer {
 
             while let Ok(query) = queryable.recv_async().await {
                 let value = query_value_clone.lock().unwrap().clone(); // Clone the value
-                let pyl = value.take_data();
+                let pyl = Bytes::from(serde_json::to_string(&value).unwrap());
                 query
                     .reply(format!("{}/att", topic_clone.clone()), pyl)
                     .await
@@ -130,45 +127,43 @@ impl StatusAttributeServer {
         let pack_2 = pack.clone();
         let handle = tokio::spawn(async move {
             while let Ok(sample) = cmd_receiver.recv_async().await {
-                let value: Bytes = Bytes::copy_from_slice(&sample.payload().to_bytes());
+                let value: u32 = sample.payload().try_to_string().unwrap().parse().unwrap();
                 // Push into pack
-                pack_2
-                    .lock()
-                    .unwrap()
-                    .push(StatusBuffer::from_raw_data(value));
+                pack_2.lock().unwrap().push(value);
             }
             Ok(())
         });
 
         task_monitor_sender
-            .send((format!("SERVER/STATUS >> {}", &topic), handle))
+            .send((format!("{}/server/number", &topic), handle))
             .await
             .unwrap();
+
         //
         //
         let n = pack.lock().unwrap().update_notifier();
         Self {
             logger: Logger::new_for_attribute_from_topic(topic.clone()),
             session: session,
-            topic: topic,
             pack: pack,
             update_notifier: n,
+            topic: topic,
             current_value: query_value,
         }
     }
 
     /// Set the value of the attribute
     ///
-    pub async fn set(&self, all_status: Vec<InstanceStatusBuffer>) -> Result<(), Error> {
-        // Wrap value into payload
-        let pyl = StatusBuffer::from_args(all_status);
-
+    pub async fn set(&self, value: u32) -> Result<(), Error> {
         // update the current queriable value
-        *self.current_value.lock().unwrap() = pyl.clone();
+        *self.current_value.lock().unwrap() = value.clone();
+
+        // Wrap value into payload
+        let pyl = Bytes::from(serde_json::to_string(&value).unwrap());
 
         // Send the command
         self.session
-            .put(format!("{}/att", self.topic.clone()), pyl.take_data())
+            .put(format!("{}/att", self.topic.clone()), pyl.clone())
             .await
             .unwrap();
         Ok(())
@@ -177,7 +172,7 @@ impl StatusAttributeServer {
     /// Get the value of the attribute
     /// If None, the first value is not yet received
     ///
-    pub async fn pop(&mut self) -> Option<StatusBuffer> {
+    pub async fn pop(&mut self) -> Option<u32> {
         self.pack.lock().unwrap().pop()
     }
 
