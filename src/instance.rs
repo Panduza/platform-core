@@ -10,9 +10,7 @@ use attribute_builder::AttributeServerBuilder;
 use class_builder::ClassBuilder;
 use panduza::task_monitor::{NamedTaskHandle, TaskHandle};
 use panduza::{InstanceState, TaskMonitor};
-use std::sync::Arc;
-use tokio::sync::mpsc::Sender;
-use tokio::sync::{Mutex, Notify};
+
 
 use crate::engine::Engine;
 use crate::log_debug;
@@ -23,19 +21,13 @@ use crate::InstanceSettings;
 use crate::Logger;
 use crate::Notification;
 use crate::StateNotification;
-
 pub use container::Container;
-
-use crate::{engine::Engine, InstanceSettings};
-use crate::{log_error, log_info, Actions, Logger, Notification};
+use crate::log_info;
 // use class_builder::ClassBuilder;
 
 use serde::{Deserialize, Serialize};
 use std::{fmt::Display, sync::Arc};
-use tokio::sync::Mutex;
-use tokio::sync::{mpsc::Sender, Notify};
-
-use async_trait::async_trait;
+use tokio::sync::{mpsc::Sender, Notify, Mutex};
 
 /// States of the main Interface FSM
 ///

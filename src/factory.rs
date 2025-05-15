@@ -113,7 +113,6 @@ impl Factory {
             engine.clone(),
             production_order.name,
             instance_actions,
-            production_order.settings, // settings
             production_order.settings,
             notification_channel,
         )
