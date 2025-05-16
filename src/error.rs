@@ -1,4 +1,6 @@
 use thiserror::Error as ThisError;
+use std::net::AddrParseError;
+use async_tftp::Error as TftpError;
 
 #[derive(ThisError, Debug, Clone)]
 pub enum Error {
@@ -58,4 +60,16 @@ macro_rules! format_driver_error {
     ($($arg:tt)*) => {
         Error::DriverError(format!($($arg)*))
     };
+}
+
+impl From<AddrParseError> for Error {
+    fn from(err: AddrParseError) -> Self {
+        Error::DriverError(format!("Erreur de parsing d'adresse : {}", err))
+    }
+}
+
+impl From<TftpError> for Error {
+    fn from(err: TftpError) -> Self {
+        Error::DriverError(format!("Erreur TFTP : {}", err))
+    }
 }

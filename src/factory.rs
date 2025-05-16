@@ -109,7 +109,6 @@ impl Factory {
     ) -> Instance {
         let producer = self.producers.get(production_order.dref()).unwrap();
         let instance_actions = producer.produce().unwrap();
-
         Instance::new(
             engine.clone(),
             production_order.name,
