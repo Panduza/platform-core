@@ -223,7 +223,6 @@ impl Instance {
     }
 
     pub async fn go_error(&mut self) {
-        // println!("GO ERROR");
         self.move_to_state(InstanceState::Error).await;
     }
 

@@ -206,8 +206,6 @@ impl Runtime {
                     let mut instance =
                         self.factory
                             .produce(self.engine.clone(),  production_order.unwrap(), self.notification_channel.0.clone());
-
-
                     //
                     let task_handle = tokio::spawn(async move {
                         loop {
