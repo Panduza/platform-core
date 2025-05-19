@@ -203,12 +203,9 @@ impl Runtime {
 
                     // let mut production_order = ProductionOrder::new("panduza.picoha-dio", "testdevice");
                     // production_order.device_settings = json!({});
-                    log_debug!(self.logger, "creating instance " );
                     let mut instance =
                         self.factory
                             .produce(self.engine.clone(),  production_order.unwrap(), self.notification_channel.0.clone());
-
-                    log_debug!(self.logger, "instance created" );
                     //
                     let task_handle = tokio::spawn(async move {
                         loop {

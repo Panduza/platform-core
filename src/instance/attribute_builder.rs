@@ -399,7 +399,7 @@ impl AttributeServerBuilder {
 
         Ok(att)
     }
- 
+
     /// BYTES
     ///
     pub async fn start_as_bytes(mut self) -> Result<BytesAttributeServer, Error> {
@@ -426,7 +426,9 @@ impl AttributeServerBuilder {
 
         //
         //
-        let att = BytesAttributeServer::new(topic, cmd_receiver, att_publisher);
+        let att =
+            BytesAttributeServer::new(topic, cmd_receiver, att_publisher, self.task_monitor_sender)
+                .await;
 
         // //
         // // Attach the attribute to its parent class if exist
@@ -436,5 +438,4 @@ impl AttributeServerBuilder {
 
         Ok(att)
     }
-
 }

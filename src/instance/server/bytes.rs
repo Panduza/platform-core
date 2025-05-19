@@ -2,11 +2,12 @@ use crate::Error;
 use crate::Logger;
 use bytes::Bytes;
 use panduza::pubsub::Publisher;
+use panduza::task_monitor::NamedTaskHandle;
 use std::sync::Arc;
 use std::sync::Mutex;
 use tokio::sync::mpsc::Receiver;
+use tokio::sync::mpsc::Sender;
 use tokio::sync::Notify;
-// use tokio::sync::Mutex;
 
 #[derive(Default, Debug)]
 struct BytesDataPack {
@@ -79,7 +80,12 @@ impl BytesAttributeServer {
 
     ///
     ///
-    pub fn new(topic: String, mut cmd_receiver: Receiver<Bytes>, att_publisher: Publisher) -> Self {
+    pub async fn new(
+        topic: String,
+        mut cmd_receiver: Receiver<Bytes>,
+        att_publisher: Publisher,
+        task_monitor_sender: Sender<NamedTaskHandle>,
+    ) -> Self {
         //
         //
         let pack = Arc::new(Mutex::new(BytesDataPack::default()));
@@ -87,20 +93,22 @@ impl BytesAttributeServer {
         //
         // Subscribe then check for incomming messages
         let pack_2 = pack.clone();
-        tokio::spawn(async move {
+        let handle: tokio::task::JoinHandle<Result<(), String>> = tokio::spawn(async move {
             loop {
                 let message = cmd_receiver.recv().await;
                 match message {
                     Some(data) => {
-                        // Deserialize
-                        let value: Bytes = data;
                         // Push into pack
-                        pack_2.lock().unwrap().push(value);
+                        pack_2.lock().unwrap().push(data);
                     }
                     None => todo!(),
                 }
             }
         });
+        task_monitor_sender
+            .send((format!("SERVER/BYTES >> {}", &topic), handle))
+            .await
+            .unwrap();
 
         //
         //
