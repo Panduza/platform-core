@@ -51,7 +51,6 @@ impl TriggerDataPack {
 
 ///
 ///
-#[derive(Clone)]
 pub struct TriggerAttributeServer {
     /// Local logger
     ///
@@ -65,9 +64,9 @@ pub struct TriggerAttributeServer {
     ///
     topic: String,
 
-    /// Inner server implementation
     ///
-    pack: Arc<Mutex<TriggerDataPack>>,
+    ///
+    cmd_receiver: Subscriber<FifoChannelHandler<Sample>>,
 
     ///
     ///
@@ -109,7 +108,7 @@ impl TriggerAttributeServer {
         let topic_clone = topic.clone();
         let session_clone = session.clone();
         let query_value_clone = query_value.clone();
-        tokio::spawn(async move {
+        let handle = tokio::spawn(async move {
             let queryable = session_clone
                 .declare_queryable(format!("{}/att", topic_clone.clone()))
                 .await
@@ -123,22 +122,9 @@ impl TriggerAttributeServer {
                     .await
                     .unwrap();
             }
-        });
-
-        //
-        // Subscribe then check for incomming messages
-        let pack_2 = pack.clone();
-        let handle = tokio::spawn(async move {
-            while let Ok(sample) = cmd_receiver.recv_async().await {
-                let value: Bytes = Bytes::copy_from_slice(&sample.payload().to_bytes());
-                // Push into pack
-                pack_2
-                    .lock()
-                    .unwrap()
-                    .push(TriggerBuffer::from_raw_data(value));
-            }
             Ok(())
         });
+
         task_monitor_sender
             .try_send((format!("{}/server/json", &topic), handle))
             .unwrap();
@@ -150,7 +136,7 @@ impl TriggerAttributeServer {
             logger: Logger::new_for_attribute_from_topic(topic.clone()),
             session: session,
             topic: topic,
-            pack: pack,
+            cmd_receiver: cmd_receiver,
             update_notifier: n,
             current_value: query_value,
         }
@@ -173,16 +159,12 @@ impl TriggerAttributeServer {
         Ok(())
     }
 
-    /// Get the value of the attribute
-    /// If None, the first value is not yet received
-    ///
-    pub async fn pop(&mut self) -> Option<TriggerBuffer> {
-        self.pack.lock().unwrap().pop()
-    }
-
     ///
     ///
-    pub async fn wait_for_commands(&self) {
-        self.update_notifier.notified().await;
+    pub async fn wait_for_commands(&self) -> Result<TriggerBuffer, Error> {
+        let received = self.cmd_receiver.recv_async().await.unwrap();
+        let value: TriggerBuffer =
+            TriggerBuffer::from_raw_data(Bytes::copy_from_slice(&received.payload().to_bytes()));
+        Ok(value)
     }
 }

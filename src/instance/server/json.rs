@@ -54,7 +54,6 @@ impl JsonDataPack {
 
 ///
 ///
-#[derive(Clone)]
 pub struct JsonAttributeServer {
     /// Local logger
     ///
@@ -64,9 +63,9 @@ pub struct JsonAttributeServer {
     ///
     session: Session,
 
-    /// Inner server implementation
     ///
-    pack: Arc<Mutex<JsonDataPack>>,
+    ///
+    cmd_receiver: Subscriber<FifoChannelHandler<Sample>>,
 
     ///
     ///
@@ -112,7 +111,7 @@ impl JsonAttributeServer {
         let topic_clone = topic.clone();
         let session_clone = session.clone();
         let query_value_clone = query_value.clone();
-        tokio::spawn(async move {
+        let handle = tokio::spawn(async move {
             let queryable = session_clone
                 .declare_queryable(format!("{}/att", topic_clone.clone()))
                 .await
@@ -126,24 +125,9 @@ impl JsonAttributeServer {
                     .await
                     .unwrap();
             }
+            Ok(())
         });
 
-        //
-        // Subscribe then check for incomming messages
-        let pack_2 = pack.clone();
-        let handle = tokio::spawn(async move {
-            loop {
-                let message = cmd_receiver.recv_async().await.unwrap();
-
-                println!("le message du JSON : {:?}", message.clone());
-                // Deserialize
-                let value: JsonValue = message.payload().try_to_string().unwrap().parse().unwrap();
-
-                println!("JSON VALUE {:?}", value.clone());
-                // Push into pack
-                pack_2.lock().unwrap().push(value);
-            }
-        });
         task_monitor_sender
             .try_send((format!("{}/server/json", &topic), handle))
             .unwrap();
@@ -154,7 +138,7 @@ impl JsonAttributeServer {
         Self {
             logger: Logger::new_for_attribute_from_topic(topic.clone()),
             session: session,
-            pack: pack,
+            cmd_receiver: cmd_receiver,
             update_notifier: n,
             topic: topic,
             current_value: query_value,
@@ -175,28 +159,14 @@ impl JsonAttributeServer {
             .await
             .unwrap();
 
-        // while let Ok(query) = queryable.recv_async().await {
-        //     query
-        //         .reply(format!("{}/att", self.topic.clone()), pyl.clone())
-        //         .await
-        //         .unwrap();
-        // }
-
-        // Send the command
-        // self.session.put(self.topic.clone(), pyl).await.unwrap();
         Ok(())
     }
 
-    /// Get the value of the attribute
-    /// If None, the first value is not yet received
-    ///
-    pub async fn pop(&mut self) -> Option<JsonValue> {
-        self.pack.lock().unwrap().pop()
-    }
-
     ///
     ///
-    pub async fn wait_for_commands(&self) {
-        self.update_notifier.notified().await;
+    pub async fn wait_for_commands(&self) -> Result<JsonValue, Error> {
+        let received = self.cmd_receiver.recv_async().await.unwrap();
+        let value: JsonValue = received.payload().try_to_string().unwrap().parse().unwrap();
+        Ok(value)
     }
 }

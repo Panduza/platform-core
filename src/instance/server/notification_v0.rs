@@ -52,7 +52,6 @@ impl NotificationDataPack {
 
 ///
 ///
-#[derive(Clone)]
 pub struct NotificationAttributeServer {
     /// Local logger
     ///
@@ -66,9 +65,9 @@ pub struct NotificationAttributeServer {
     ///
     session: Session,
 
-    /// Inner server implementation
     ///
-    pack: Arc<Mutex<NotificationDataPack>>,
+    ///
+    cmd_receiver: Subscriber<FifoChannelHandler<Sample>>,
 
     ///
     ///
@@ -110,7 +109,7 @@ impl NotificationAttributeServer {
         let topic_clone = topic.clone();
         let session_clone = session.clone();
         let query_value_clone = query_value.clone();
-        tokio::spawn(async move {
+        let handle = tokio::spawn(async move {
             let queryable = session_clone
                 .declare_queryable(format!("{}/att", topic_clone.clone()))
                 .await
@@ -124,22 +123,9 @@ impl NotificationAttributeServer {
                     .await
                     .unwrap();
             }
-        });
-
-        //
-        // Subscribe then check for incomming messages
-        let pack_2 = pack.clone();
-        let handle = tokio::spawn(async move {
-            while let Ok(sample) = cmd_receiver.recv_async().await {
-                let value: Bytes = Bytes::copy_from_slice(&sample.payload().to_bytes());
-                // Push into pack
-                pack_2
-                    .lock()
-                    .unwrap()
-                    .push(NotificationBuffer::from_raw_data(value));
-            }
             Ok(())
         });
+
         task_monitor_sender
             .send((format!("SERVER/STATUS >> {}", &topic), handle))
             .await
@@ -151,7 +137,7 @@ impl NotificationAttributeServer {
             logger: Logger::new_for_attribute_from_topic(topic.clone()),
             session: session,
             topic: topic,
-            pack: pack,
+            cmd_receiver: cmd_receiver,
             update_notifier: n,
             current_value: query_value,
         }
@@ -188,16 +174,11 @@ impl NotificationAttributeServer {
         Ok(())
     }
 
-    /// Get the value of the attribute
-    /// If None, the first value is not yet received
-    ///
-    pub async fn pop(&mut self) -> Option<NotificationBuffer> {
-        self.pack.lock().unwrap().pop()
-    }
-
     ///
     ///
-    pub async fn wait_for_commands(&self) {
-        self.update_notifier.notified().await;
+    pub async fn wait_for_commands(&self) -> Result<NotificationBuffer, Error> {
+        let received = self.cmd_receiver.recv_async().await.unwrap();
+        let value: Bytes = Bytes::copy_from_slice(&received.payload().to_bytes());
+        Ok(NotificationBuffer::from_raw_data(value))
     }
 }

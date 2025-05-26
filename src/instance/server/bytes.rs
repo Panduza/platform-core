@@ -50,7 +50,6 @@ impl BytesDataPack {
 
 ///
 ///
-#[derive(Clone)]
 pub struct BytesAttributeServer {
     /// Local logger
     ///
@@ -60,9 +59,9 @@ pub struct BytesAttributeServer {
     ///
     session: Session,
 
-    /// Inner server implementation
     ///
-    pack: Arc<Mutex<BytesDataPack>>,
+    ///
+    cmd_receiver: Subscriber<FifoChannelHandler<Sample>>,
 
     ///
     ///
@@ -108,7 +107,7 @@ impl BytesAttributeServer {
         let topic_clone = topic.clone();
         let session_clone = session.clone();
         let query_value_clone = query_value.clone();
-        tokio::spawn(async move {
+        let handle = tokio::spawn(async move {
             let queryable = session_clone
                 .declare_queryable(format!("{}/att", topic_clone.clone()))
                 .await
@@ -121,17 +120,6 @@ impl BytesAttributeServer {
                     .reply(format!("{}/att", topic_clone.clone()), pyl)
                     .await
                     .unwrap();
-            }
-        });
-
-        //
-        // Subscribe then check for incomming messages
-        let pack_2 = pack.clone();
-        let handle = tokio::spawn(async move {
-            while let Ok(sample) = cmd_receiver.recv_async().await {
-                let value: Bytes = Bytes::copy_from_slice(&sample.payload().to_bytes());
-                // Push into pack
-                pack_2.lock().unwrap().push(value);
             }
             Ok(())
         });
@@ -147,7 +135,7 @@ impl BytesAttributeServer {
         Self {
             logger: Logger::new_for_attribute_from_topic(topic.clone()),
             session: session,
-            pack: pack,
+            cmd_receiver: cmd_receiver,
             update_notifier: n,
             topic: topic,
             current_value: query_value,
@@ -169,16 +157,11 @@ impl BytesAttributeServer {
         Ok(())
     }
 
-    /// Get the value of the attribute
-    /// If None, the first value is not yet received
-    ///
-    pub async fn pop(&mut self) -> Option<Bytes> {
-        self.pack.lock().unwrap().pop()
-    }
-
     ///
     ///
-    pub async fn wait_for_commands(&self) {
-        self.update_notifier.notified().await;
+    pub async fn wait_for_commands(&self) -> Result<Bytes, Error> {
+        let received = self.cmd_receiver.recv_async().await.unwrap();
+        let value: Bytes = Bytes::copy_from_slice(&received.payload().to_bytes());
+        Ok(value)
     }
 }

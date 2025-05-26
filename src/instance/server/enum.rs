@@ -49,7 +49,6 @@ impl EnumDataPack {
 
 ///
 ///
-#[derive(Clone)]
 pub struct EnumAttributeServer {
     /// Local logger
     ///
@@ -61,9 +60,9 @@ pub struct EnumAttributeServer {
     ///
     session: Session,
 
-    /// Inner server implementation
     ///
-    pack: Arc<Mutex<EnumDataPack>>,
+    ///
+    cmd_receiver: Subscriber<FifoChannelHandler<Sample>>,
 
     ///
     ///
@@ -110,7 +109,7 @@ impl EnumAttributeServer {
         let topic_clone = topic.clone();
         let session_clone = session.clone();
         let query_value_clone = query_value.clone();
-        tokio::spawn(async move {
+        let handle = tokio::spawn(async move {
             let queryable = session_clone
                 .declare_queryable(format!("{}/att", topic_clone.clone()))
                 .await
@@ -124,20 +123,9 @@ impl EnumAttributeServer {
                     .await
                     .unwrap();
             }
-        });
-
-        //
-        // Subscribe then check for incomming messages
-        let pack_2 = pack.clone();
-        let handle = tokio::spawn(async move {
-            while let Ok(sample) = cmd_receiver.recv_async().await {
-                let value = sample.payload().try_to_string().unwrap().to_string();
-                let value = serde_json::from_str::<String>(&value).unwrap_or(value);
-                // Push into pack
-                pack_2.lock().unwrap().push(value);
-            }
             Ok(())
         });
+
         task_monitor_sender
             .try_send((format!("{}/server/enum", &topic), handle))
             .unwrap();
@@ -148,7 +136,7 @@ impl EnumAttributeServer {
         Self {
             logger: Logger::new_for_attribute_from_topic(topic.clone()),
             session: session,
-            pack: pack,
+            cmd_receiver: cmd_receiver,
             update_notifier: n,
             whitelist: whitelist,
             current_value: query_value,
@@ -170,16 +158,12 @@ impl EnumAttributeServer {
         Ok(())
     }
 
-    /// Get the value of the attribute
-    /// If None, the first value is not yet received
-    ///
-    pub async fn pop(&mut self) -> Option<String> {
-        self.pack.lock().unwrap().pop()
-    }
-
     ///
     ///
-    pub async fn wait_for_commands(&self) {
-        self.update_notifier.notified().await;
+    pub async fn wait_for_commands(&self) -> Result<String, Error> {
+        let received = self.cmd_receiver.recv_async().await.unwrap();
+        let value = received.payload().try_to_string().unwrap().to_string();
+        let value = serde_json::from_str::<String>(&value).unwrap_or(value);
+        Ok(value)
     }
 }

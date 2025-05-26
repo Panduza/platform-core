@@ -8,8 +8,9 @@ readme = "README.md"
 [dependencies]
 
 # Panduza Rust Client
-panduza = { git = "https://github.com/Panduza/panduza-rust", tag = "0.0.1"}
-panduza = { path = "../panduza-rust" }# Main async framework for the platform
+#panduza = { git = "https://github.com/Panduza/panduza-rust", tag = "0.0.1"}
+panduza = { path = "../panduza-rust" }
+# Main async framework for the platform
 # Main async framework for the platform
 tokio = { version = "1.43.0", features = ["full", "tracing"] }
 # Async trait support

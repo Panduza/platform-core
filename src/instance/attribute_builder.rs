@@ -227,38 +227,6 @@ impl AttributeServerBuilder {
         self.r#type = Some(NotificationAttributeServer::r#type());
         let (cmd_receiver, att_publisher) = self.common_ops(50).await;
         let att = NotificationAttributeServer::new(
-            topic.clone(),
-            cmd_receiver,
-            att_publisher,
-            self.task_monitor_sender,
-        )
-        .await;
-        Ok(att)
-    }
-
-    /// STATUS
-    ///
-    pub async fn __start_as_status(mut self) -> Result<StatusAttributeServer, Error> {
-        let topic = self.topic.as_ref().unwrap();
-        self.r#type = Some(StatusAttributeServer::r#type());
-        let (cmd_receiver, att_publisher) = self.common_ops(50).await;
-        let att = StatusAttributeServer::new(
-            topic.clone(),
-            cmd_receiver,
-            att_publisher,
-            self.task_monitor_sender,
-        )
-        .await;
-        Ok(att)
-    }
-
-    /// NOTIFICATION
-    ///
-    pub async fn __start_as_notification(mut self) -> Result<NotificationAttributeServer, Error> {
-        let topic = self.topic.as_ref().unwrap();
-        self.r#type = Some(NotificationAttributeServer::r#type());
-        let (cmd_receiver, att_publisher) = self.common_ops(50).await;
-        let att = NotificationAttributeServer::new(
             self.engine.session.clone(),
             topic.clone(),
             cmd_receiver,

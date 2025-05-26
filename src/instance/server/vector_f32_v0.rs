@@ -50,7 +50,6 @@ impl VectorF32DataPack {
 
 ///
 ///
-#[derive(Clone)]
 pub struct VectorF32AttributeServer {
     /// Local logger
     ///
@@ -64,9 +63,9 @@ pub struct VectorF32AttributeServer {
     ///
     topic: String,
 
-    /// Inner server implementation
     ///
-    pack: Arc<Mutex<VectorF32DataPack>>,
+    ///
+    cmd_receiver: Subscriber<FifoChannelHandler<Sample>>,
 
     ///
     ///
@@ -108,7 +107,7 @@ impl VectorF32AttributeServer {
         let topic_clone = topic.clone();
         let session_clone = session.clone();
         let query_value_clone = query_value.clone();
-        tokio::spawn(async move {
+        let handle = tokio::spawn(async move {
             let queryable = session_clone
                 .declare_queryable(format!("{}/att", topic_clone.clone()))
                 .await
@@ -122,22 +121,9 @@ impl VectorF32AttributeServer {
                     .await
                     .unwrap();
             }
-        });
-
-        //
-        // Subscribe then check for incomming messages
-        let pack_2 = pack.clone();
-        let handle = tokio::spawn(async move {
-            while let Ok(sample) = cmd_receiver.recv_async().await {
-                let value: Bytes = Bytes::copy_from_slice(&sample.payload().to_bytes());
-                // Push into pack
-                pack_2
-                    .lock()
-                    .unwrap()
-                    .push(VectorF32Buffer::from_raw_data(value));
-            }
             Ok(())
         });
+
         task_monitor_sender
             .try_send((format!("{}/server/json", &topic), handle))
             .unwrap();
@@ -149,7 +135,7 @@ impl VectorF32AttributeServer {
             logger: Logger::new_for_attribute_from_topic(topic.clone()),
             session: session,
             topic: topic,
-            pack: pack,
+            cmd_receiver: cmd_receiver,
             update_notifier: n,
             current_value: query_value,
         }
@@ -172,16 +158,13 @@ impl VectorF32AttributeServer {
         Ok(())
     }
 
-    /// Get the value of the attribute
-    /// If None, the first value is not yet received
-    ///
-    pub async fn pop(&mut self) -> Option<VectorF32Buffer> {
-        self.pack.lock().unwrap().pop()
-    }
-
     ///
     ///
-    pub async fn wait_for_commands(&self) {
+    pub async fn wait_for_commands(&self) -> Result<VectorF32Buffer, Error> {
         self.update_notifier.notified().await;
+        let received = self.cmd_receiver.recv_async().await.unwrap();
+        let value: VectorF32Buffer =
+            VectorF32Buffer::from_raw_data(Bytes::copy_from_slice(&received.payload().to_bytes()));
+        Ok(value)
     }
 }

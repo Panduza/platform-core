@@ -49,7 +49,6 @@ impl NumberDataPack {
 
 ///
 ///
-#[derive(Clone)]
 pub struct NumberAttributeServer {
     /// Local logger
     ///
@@ -58,9 +57,10 @@ pub struct NumberAttributeServer {
     ///
     ///
     session: Session,
-    /// Inner server implementation
+
     ///
-    pack: Arc<Mutex<NumberDataPack>>,
+    ///
+    cmd_receiver: Subscriber<FifoChannelHandler<Sample>>,
 
     ///
     ///
@@ -106,7 +106,7 @@ impl NumberAttributeServer {
         let topic_clone = topic.clone();
         let session_clone = session.clone();
         let query_value_clone = query_value.clone();
-        tokio::spawn(async move {
+        let handle = tokio::spawn(async move {
             let queryable = session_clone
                 .declare_queryable(format!("{}/att", topic_clone.clone()))
                 .await
@@ -119,17 +119,6 @@ impl NumberAttributeServer {
                     .reply(format!("{}/att", topic_clone.clone()), pyl)
                     .await
                     .unwrap();
-            }
-        });
-
-        //
-        // Subscribe then check for incomming messages
-        let pack_2 = pack.clone();
-        let handle = tokio::spawn(async move {
-            while let Ok(sample) = cmd_receiver.recv_async().await {
-                let value: u32 = sample.payload().try_to_string().unwrap().parse().unwrap();
-                // Push into pack
-                pack_2.lock().unwrap().push(value);
             }
             Ok(())
         });
@@ -145,7 +134,7 @@ impl NumberAttributeServer {
         Self {
             logger: Logger::new_for_attribute_from_topic(topic.clone()),
             session: session,
-            pack: pack,
+            cmd_receiver: cmd_receiver,
             update_notifier: n,
             topic: topic,
             current_value: query_value,
@@ -169,16 +158,11 @@ impl NumberAttributeServer {
         Ok(())
     }
 
-    /// Get the value of the attribute
-    /// If None, the first value is not yet received
-    ///
-    pub async fn pop(&mut self) -> Option<u32> {
-        self.pack.lock().unwrap().pop()
-    }
-
     ///
     ///
-    pub async fn wait_for_commands(&self) {
-        self.update_notifier.notified().await;
+    pub async fn wait_for_commands(&self) -> Result<u32, Error> {
+        let received = self.cmd_receiver.recv_async().await.unwrap();
+        let value: u32 = received.payload().try_to_string().unwrap().parse().unwrap();
+        Ok(value)
     }
 }
