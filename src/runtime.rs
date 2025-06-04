@@ -286,8 +286,8 @@ impl RuntimeBuilder {
         self.notification_channel.0.clone()
     }
 
-    pub fn start(self) -> Runtime {
-        let rr = self.engine_builder.build();
+    pub async fn start(self) -> Runtime {
+        let rr = self.engine_builder.build().await;
 
         Runtime::new(
             self.factory,

@@ -65,7 +65,7 @@ macro_rules! plugin_interface {
         ///
         #[tokio::main]
         async fn start_async_runtime(runtime_builder: RuntimeBuilder) {
-            let mut runtime = runtime_builder.start();
+            let mut runtime = runtime_builder.start().await;
             runtime.set_plugin($plg_name);
             runtime.task().await.unwrap();
         }
@@ -86,7 +86,7 @@ macro_rules! plugin_interface {
 
             //
             //
-            let engine_options = EngineOptions::default();
+            let engine_options = EngineOptions::new("127.0.0.1", 7447, "minica.pem");
             let engine_builder = EngineBuilder::new(engine_options);
 
             //
