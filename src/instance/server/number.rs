@@ -1,5 +1,7 @@
+use crate::AlertNotification;
 use crate::Error;
 use crate::Logger;
+use crate::Notification;
 use bytes::Bytes;
 // use panduza::pubsub::Publisher;
 use panduza::task_monitor::NamedTaskHandle;
@@ -73,6 +75,10 @@ pub struct NumberAttributeServer {
     /// query value
     ///
     current_value: Arc<Mutex<u32>>,
+
+    /// Channel to send notifications
+    ///
+    notification_channel: Sender<Notification>,
 }
 
 impl NumberAttributeServer {
@@ -95,6 +101,7 @@ impl NumberAttributeServer {
         topic: String,
         mut cmd_receiver: Subscriber<FifoChannelHandler<Sample>>,
         task_monitor_sender: Sender<NamedTaskHandle>,
+        notification_channel: Sender<Notification>,
     ) -> Self {
         //
         //
@@ -138,6 +145,7 @@ impl NumberAttributeServer {
             update_notifier: n,
             topic: topic,
             current_value: query_value,
+            notification_channel: notification_channel,
         }
     }
 
@@ -164,5 +172,13 @@ impl NumberAttributeServer {
         let received = self.cmd_receiver.recv_async().await.unwrap();
         let value: u32 = received.payload().try_to_string().unwrap().parse().unwrap();
         Ok(value)
+    }
+
+    ///
+    ///
+    pub async fn trigger_alert<T: Into<String>>(&self, message: T) {
+        let notification =
+            Notification::Alert(AlertNotification::new(self.topic.clone(), message.into()));
+        self.notification_channel.send(notification).await.unwrap();
     }
 }

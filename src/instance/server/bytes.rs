@@ -1,5 +1,7 @@
+use crate::AlertNotification;
 use crate::Error;
 use crate::Logger;
+use crate::Notification;
 use bytes::Bytes;
 // use panduza::pubsub::Publisher;
 use panduza::task_monitor::NamedTaskHandle;
@@ -74,6 +76,10 @@ pub struct BytesAttributeServer {
     /// query value
     ///
     current_value: Arc<Mutex<Bytes>>,
+
+    /// Channel to send notifications
+    ///
+    notification_channel: Sender<Notification>,
 }
 
 impl BytesAttributeServer {
@@ -96,6 +102,7 @@ impl BytesAttributeServer {
         topic: String,
         mut cmd_receiver: Subscriber<FifoChannelHandler<Sample>>,
         task_monitor_sender: Sender<NamedTaskHandle>,
+        notification_channel: Sender<Notification>,
     ) -> Self {
         //
         //
@@ -139,6 +146,7 @@ impl BytesAttributeServer {
             update_notifier: n,
             topic: topic,
             current_value: query_value,
+            notification_channel: notification_channel,
         }
     }
 
@@ -163,5 +171,13 @@ impl BytesAttributeServer {
         let received = self.cmd_receiver.recv_async().await.unwrap();
         let value: Bytes = Bytes::copy_from_slice(&received.payload().to_bytes());
         Ok(value)
+    }
+
+    ///
+    ///
+    pub async fn trigger_alert<T: Into<String>>(&self, message: T) {
+        let notification =
+            Notification::Alert(AlertNotification::new(self.topic.clone(), message.into()));
+        self.notification_channel.send(notification).await.unwrap();
     }
 }

@@ -41,6 +41,10 @@ pub struct Engine {
     /// Engine works on router objects
     ///
     pub session: Session,
+
+    /// Namespace of the engine
+    ///
+    pub namespace: Option<String>,
 }
 
 impl Engine {
@@ -50,20 +54,26 @@ impl Engine {
     ///
     /// * `core` - The core of the reactor
     ///
-    pub fn new(session: Session) -> Self {
+    pub fn new(session: Session, namespace: Option<String>) -> Self {
         // let data = ;
 
         // Server hostname
         // let hostname = hostname::get().unwrap().to_string_lossy().to_string();
 
-        Self { session: session }
+        Self {
+            session: session,
+            namespace: namespace,
+        }
     }
 
     ///
     ///
-    pub fn root_topic(&self) -> String {
-        "pza".to_string()
-        // self.root_topic.clone()
+    pub fn root_topic(&self, namespace: Option<String>) -> String {
+        println!("namespace: {:?}", namespace);
+        format!(
+            "{}pza",
+            namespace.map_or("".to_string(), |ns| format!("{}/", ns))
+        )
     }
 
     /// Register
@@ -73,7 +83,13 @@ impl Engine {
         topic: A,
         channel_size: usize,
     ) -> Subscriber<FifoChannelHandler<Sample>> {
-        self.session.declare_subscriber(topic.into()).await.unwrap()
+        let topic_str: String = topic.into();
+        // let topic_prefixless = topic_str.strip_prefix("Zenoh/").unwrap_or(&topic_str);
+
+        // println!("topic_prefixless: {}", topic_prefixless);
+        println!("topic: {}", topic_str.clone());
+
+        self.session.declare_subscriber(topic_str).await.unwrap()
     }
 
     ///
@@ -138,7 +154,7 @@ pub async fn new_engine(options: EngineOptions) -> Result<Engine, String> {
     // Create MQTT router
     // let router = panduza::router::new_router(options.pubsub_options).map_err(|e| e.to_string())?;
 
-    let session = new_connection(options.pubsub_options)
+    let session = new_connection(options.pubsub_options.clone())
         .await
         .map_err(|e| e.to_string())?;
 
@@ -148,7 +164,7 @@ pub async fn new_engine(options: EngineOptions) -> Result<Engine, String> {
 
     //
     // Finalize the engine
-    Ok(Engine::new(session))
+    Ok(Engine::new(session, options.pubsub_options.namespace))
 }
 
 // / The goal of this object is to provide a tmp object that
@@ -159,6 +175,10 @@ pub async fn new_engine(options: EngineOptions) -> Result<Engine, String> {
 pub struct EngineBuilder {
     // options: EngineOptions,
     session: Session,
+
+    /// Namespace of the engine
+    ///
+    namespace: Option<String>,
 }
 
 impl EngineBuilder {
@@ -167,17 +187,20 @@ impl EngineBuilder {
     pub async fn new(options: EngineOptions) -> Self {
         //
         // Create router
-        let session = new_connection(options.pubsub_options).await.unwrap();
+        let session = new_connection(options.pubsub_options.clone())
+            .await
+            .unwrap();
 
         Self {
             // options: options,
             session: session,
+            namespace: options.pubsub_options.namespace,
         }
     }
 
     pub fn build(self) -> Engine {
         //
         // Finalize the engine
-        Engine::new(self.session)
+        Engine::new(self.session, self.namespace)
     }
 }
