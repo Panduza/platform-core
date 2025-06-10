@@ -164,13 +164,16 @@ impl AttributeServerBuilder {
 
         let topic = self.topic.as_ref().unwrap();
 
-        let topic_prefixless = topic
-            .strip_prefix(self.engine.namespace.as_ref().unwrap())
-            .unwrap_or(topic);
+        let topic_prefixless = if let Some(namespace) = self.engine.namespace.as_ref() {
+            // topic.strip_prefix(namespace).unwrap_or(topic)
+            format!("*{}", topic.strip_prefix(namespace).unwrap_or(topic))
+        } else {
+            topic.to_string()
+        };
 
         let cmd_receiver = self
             .engine
-            .register_listener(format!("*{}/cmd", topic_prefixless), 50)
+            .register_listener(format!("{}/cmd", topic_prefixless), 50)
             .await;
 
         let att_publisher = self
