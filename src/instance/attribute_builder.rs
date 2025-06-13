@@ -164,12 +164,42 @@ impl AttributeServerBuilder {
 
         let topic = self.topic.as_ref().unwrap();
 
+        println!("topic de base : {}", topic);
+
         let topic_prefixless = if let Some(namespace) = self.engine.namespace.as_ref() {
             // topic.strip_prefix(namespace).unwrap_or(topic)
-            format!("*{}", topic.strip_prefix(namespace).unwrap_or(topic))
+            // format!(
+            //     "*{}",
+            //     topic.strip_prefix(namespace).unwrap_or(topic.as_str())
+            // )
+
+            if namespace.is_empty() {
+                topic.to_string()
+            } else {
+                format!(
+                    "*{}",
+                    topic.strip_prefix(namespace).unwrap_or(topic.as_str())
+                )
+            }
         } else {
             topic.to_string()
         };
+
+        // let topic = if let Some(namespace) = self.engine.namespace.as_ref() {
+        //     if namespace.is_empty() {
+        //         topic.strip_prefix("/").unwrap_or(topic).to_string()
+        //     } else {
+        //         topic.to_string()
+        //     }
+        // } else {
+        //     topic.to_string()
+        // };
+
+        // if let Some(namespace) = self.engine.namespace.as_ref() {
+        //     topic_prefixless = topic_prefixless.strip_prefix("*");
+        // }
+        println!("topic publisher: {}", topic);
+        println!("topic subscriber: {}", topic_prefixless);
 
         let cmd_receiver = self
             .engine

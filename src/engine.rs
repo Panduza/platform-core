@@ -72,7 +72,11 @@ impl Engine {
         println!("namespace: {:?}", namespace);
         format!(
             "{}pza",
-            namespace.map_or("".to_string(), |ns| format!("{}/", ns))
+            namespace.map_or("".to_string(), |ns| if ns.is_empty() {
+                "".to_string()
+            } else {
+                format!("{}/", ns)
+            })
         )
     }
 
@@ -174,33 +178,27 @@ pub async fn new_engine(options: EngineOptions) -> Result<Engine, String> {
 
 pub struct EngineBuilder {
     // options: EngineOptions,
-    session: Session,
-
-    /// Namespace of the engine
-    ///
-    namespace: Option<String>,
+    options: EngineOptions,
 }
 
 impl EngineBuilder {
     /// Create and Start the engine
     ///
-    pub async fn new(options: EngineOptions) -> Self {
-        //
-        // Create router
-        let session = new_connection(options.pubsub_options.clone())
-            .await
-            .unwrap();
-
+    /// This function MUST absolutely not be async !
+    /// It will be used in plugin sync context
+    ///
+    pub fn new(options: EngineOptions) -> Self {
         Self {
             // options: options,
-            session: session,
-            namespace: options.pubsub_options.namespace,
+            options: options,
         }
     }
 
-    pub fn build(self) -> Engine {
+    pub async fn build(self) -> Engine {
+        let namespace = self.options.pubsub_options.namespace.clone();
+        let session = new_connection(self.options.pubsub_options).await.unwrap();
         //
         // Finalize the engine
-        Engine::new(self.session, self.namespace)
+        Engine::new(session, namespace)
     }
 }
