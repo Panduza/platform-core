@@ -9,29 +9,6 @@ use zenoh::pubsub::Subscriber;
 use zenoh::sample::Sample;
 use zenoh::{handlers::FifoChannelHandler, Session};
 
-// #[async_trait]
-// impl MessageHandler for PzaScanMessageHandler {
-//     async fn on_message(&mut self, _incomming_data: &Bytes) -> Result<(), Error> {
-//         // let hostname = hostname::get().unwrap().to_string_lossy().to_string();
-//         let now = Utc::now();
-
-//         self.message_client
-//             .publish(
-//                 format!("pza"),
-//                 QoS::AtLeastOnce,
-//                 false,
-//                 format!("{}", now.timestamp_millis()),
-//             )
-//             .await
-//             .map_err(|e| Error::PublishError {
-//                 topic: "pza".to_string(),
-//                 pyl_size: now.timestamp_millis().to_string().len(),
-//                 cause: e.to_string(),
-//             })?;
-//         Ok(())
-//     }
-// }
-
 /// The engine is the core object that will handle the connections and the events
 ///
 /// All the attribute and objects will be powered by the engine
@@ -171,13 +148,11 @@ pub async fn new_engine(options: EngineOptions) -> Result<Engine, String> {
     Ok(Engine::new(session, options.pubsub_options.namespace))
 }
 
-// / The goal of this object is to provide a tmp object that
-// / does not use tokio:spawn, to be able to prepare the context.
-// / Before starting a tokio context.
-// /
-
+/// The goal of this object is to provide a tmp object that
+/// does not use tokio:spawn, to be able to prepare the context.
+/// Before starting a tokio context.
+///
 pub struct EngineBuilder {
-    // options: EngineOptions,
     options: EngineOptions,
 }
 
@@ -188,6 +163,7 @@ impl EngineBuilder {
     /// It will be used in plugin sync context
     ///
     pub fn new(options: EngineOptions) -> Self {
+
         Self {
             // options: options,
             options: options,
@@ -200,5 +176,6 @@ impl EngineBuilder {
         //
         // Finalize the engine
         Engine::new(session, namespace)
+
     }
 }
