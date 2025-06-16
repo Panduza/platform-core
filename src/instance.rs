@@ -84,6 +84,7 @@ impl Instance {
         actions: Box<dyn Actions>,
         settings: Option<InstanceSettings>,
         notification_channel: Sender<Notification>,
+        namespace: Option<String>,
     ) -> Instance {
         //
         // Create a task monitor for the instance
@@ -95,7 +96,8 @@ impl Instance {
         let instance = Instance {
             logger: Logger::new_for_instance(name.clone()),
             engine: engine.clone(),
-            topic: format!("{}/{}", engine.root_topic(), name),
+            topic: format!("{}/{}", engine.root_topic(namespace), name),
+            // topic: format!("{}/{}", "pza", name),
             settings,
             actions: Arc::new(Mutex::new(actions)),
             state: Arc::new(Mutex::new(InstanceState::Booting)),
@@ -189,6 +191,7 @@ impl Instance {
                 InstanceState::Running => {} // do nothing, watch for inner tasks
                 InstanceState::Error => {
                     self.task_monitor.cancel_all_monitored_tasks().await;
+                    println!("il y a {:?} tasks", self.task_monitor.task_count().await);
                     //
                     // Wait before reboot
                     self.actions

@@ -164,9 +164,46 @@ impl AttributeServerBuilder {
 
         let topic = self.topic.as_ref().unwrap();
 
+        println!("topic de base : {}", topic);
+
+        let topic_prefixless = if let Some(namespace) = self.engine.namespace.as_ref() {
+            // topic.strip_prefix(namespace).unwrap_or(topic)
+            // format!(
+            //     "*{}",
+            //     topic.strip_prefix(namespace).unwrap_or(topic.as_str())
+            // )
+
+            if namespace.is_empty() {
+                topic.to_string()
+            } else {
+                format!(
+                    "*{}",
+                    topic.strip_prefix(namespace).unwrap_or(topic.as_str())
+                )
+            }
+        } else {
+            topic.to_string()
+        };
+
+        // let topic = if let Some(namespace) = self.engine.namespace.as_ref() {
+        //     if namespace.is_empty() {
+        //         topic.strip_prefix("/").unwrap_or(topic).to_string()
+        //     } else {
+        //         topic.to_string()
+        //     }
+        // } else {
+        //     topic.to_string()
+        // };
+
+        // if let Some(namespace) = self.engine.namespace.as_ref() {
+        //     topic_prefixless = topic_prefixless.strip_prefix("*");
+        // }
+        println!("topic publisher: {}", topic);
+        println!("topic subscriber: {}", topic_prefixless);
+
         let cmd_receiver = self
             .engine
-            .register_listener(format!("{}/cmd", topic), 50)
+            .register_listener(format!("{}/cmd", topic_prefixless), 50)
             .await;
 
         let att_publisher = self
@@ -181,7 +218,8 @@ impl AttributeServerBuilder {
     /// BOOLEAN
     ///
     pub async fn start_as_boolean(mut self) -> Result<BooleanAttributeServer, Error> {
-        let topic = self.topic.as_ref().unwrap();
+        let topic: &String = self.topic.as_ref().unwrap();
+        println!("topic_boolean: {}", topic.clone());
         self.r#type = Some(BooleanAttributeServer::r#type());
         let (cmd_receiver, att_publisher) = self.common_ops(50).await;
         let att = BooleanAttributeServer::new(
@@ -301,36 +339,49 @@ impl AttributeServerBuilder {
     ///
     ///
     pub async fn start_as_json(mut self) -> Result<JsonAttributeServer, Error> {
-        //
-        //
+        // //
+        // //
+        // self.r#type = Some(JsonAttributeServer::r#type());
+
+        // //
+        // //
+        // self.send_creation_notification().await;
+
+        // let topic = self.topic.unwrap();
+
+        // let cmd_receiver = self
+        //     .engine
+        //     .register_listener(format!("{}/cmd", topic), 50)
+        //     .await;
+
+        // let att_publisher = self
+        //     .engine
+        //     .register_publisher(format!("{}/att", topic))
+        //     .await
+        //     .unwrap();
+
+        // //
+        // //
+        // let att = JsonAttributeServer::new(
+        //     self.engine.session.clone(),
+        //     topic,
+        //     cmd_receiver,
+        //     self.task_monitor_sender,
+        // );
+
+        // Ok(att)
+
+        let topic: &String = self.topic.as_ref().unwrap();
         self.r#type = Some(JsonAttributeServer::r#type());
-
-        //
-        //
-        self.send_creation_notification().await;
-
-        let topic = self.topic.unwrap();
-
-        let cmd_receiver = self
-            .engine
-            .register_listener(format!("{}/cmd", topic), 50)
-            .await;
-
-        let att_publisher = self
-            .engine
-            .register_publisher(format!("{}/att", topic))
-            .await
-            .unwrap();
-
-        //
-        //
+        let (cmd_receiver, att_publisher) = self.common_ops(50).await;
         let att = JsonAttributeServer::new(
             self.engine.session.clone(),
-            topic,
+            topic.clone(),
             cmd_receiver,
-            self.task_monitor_sender,
-        );
-
+            self.task_monitor_sender.clone(),
+            self.notification_channel.clone(),
+        )
+        .await;
         Ok(att)
     }
 
@@ -372,111 +423,150 @@ impl AttributeServerBuilder {
     ///
     ///
     pub async fn start_as_string(mut self) -> Result<StringAttributeServer, Error> {
-        //
-        //
+        // //
+        // //
+        // self.r#type = Some(StringAttributeServer::r#type());
+
+        // //
+        // //
+        // self.send_creation_notification().await;
+
+        // let topic = self.topic.unwrap();
+
+        // let cmd_receiver = self
+        //     .engine
+        //     .register_listener(format!("{}/cmd", topic), 50)
+        //     .await;
+
+        // let att_publisher = self
+        //     .engine
+        //     .register_publisher(format!("{}/att", topic))
+        //     .await
+        //     .unwrap();
+
+        // //
+        // //
+        // let att = StringAttributeServer::new(
+        //     self.engine.session.clone(),
+        //     topic,
+        //     cmd_receiver,
+        //     self.task_monitor_sender,
+        // )
+        // .await;
+
+        // Ok(att)
+
+        let topic: &String = self.topic.as_ref().unwrap();
         self.r#type = Some(StringAttributeServer::r#type());
-
-        //
-        //
-        self.send_creation_notification().await;
-
-        let topic = self.topic.unwrap();
-
-        let cmd_receiver = self
-            .engine
-            .register_listener(format!("{}/cmd", topic), 50)
-            .await;
-
-        let att_publisher = self
-            .engine
-            .register_publisher(format!("{}/att", topic))
-            .await
-            .unwrap();
-
-        //
-        //
+        let (cmd_receiver, att_publisher) = self.common_ops(50).await;
         let att = StringAttributeServer::new(
             self.engine.session.clone(),
-            topic,
+            topic.clone(),
             cmd_receiver,
-            self.task_monitor_sender,
+            self.task_monitor_sender.clone(),
+            self.notification_channel.clone(),
         )
         .await;
-
         Ok(att)
     }
 
     /// BYTES
     ///
     pub async fn start_as_bytes(mut self) -> Result<BytesAttributeServer, Error> {
-        //
-        //
+        // //
+        // //
+        // self.r#type = Some(BytesAttributeServer::r#type());
+
+        // //
+        // //
+        // self.send_creation_notification().await;
+
+        // let topic = self.topic.unwrap();
+
+        // let cmd_receiver = self
+        //     .engine
+        //     .register_listener(format!("{}/cmd", topic), 50)
+        //     .await;
+
+        // let att_publisher = self
+        //     .engine
+        //     .register_publisher(format!("{}/att", topic))
+        //     .await
+        //     .unwrap();
+
+        // //
+        // //
+        // let att = BytesAttributeServer::new(
+        //     self.engine.session.clone(),
+        //     topic,
+        //     cmd_receiver,
+        //     self.task_monitor_sender.clone(),
+        // )
+        // .await;
+
+        // Ok(att)
+
+        let topic: &String = self.topic.as_ref().unwrap();
         self.r#type = Some(BytesAttributeServer::r#type());
-
-        //
-        //
-        self.send_creation_notification().await;
-
-        let topic = self.topic.unwrap();
-
-        let cmd_receiver = self
-            .engine
-            .register_listener(format!("{}/cmd", topic), 50)
-            .await;
-
-        let att_publisher = self
-            .engine
-            .register_publisher(format!("{}/att", topic))
-            .await
-            .unwrap();
-
-        //
-        //
+        let (cmd_receiver, att_publisher) = self.common_ops(50).await;
         let att = BytesAttributeServer::new(
             self.engine.session.clone(),
-            topic,
+            topic.clone(),
             cmd_receiver,
             self.task_monitor_sender.clone(),
+            self.notification_channel.clone(),
         )
         .await;
-
         Ok(att)
     }
 
     /// NUMBER
     ///
     pub async fn start_as_number(mut self) -> Result<NumberAttributeServer, Error> {
-        //
-        //
+        // //
+        // //
+        // self.r#type = Some(NumberAttributeServer::r#type());
+
+        // //
+        // //
+        // self.send_creation_notification().await;
+
+        // let topic = self.topic.unwrap();
+
+        // let cmd_receiver = self
+        //     .engine
+        //     .register_listener(format!("{}/cmd", topic), 50)
+        //     .await;
+
+        // let att_publisher = self
+        //     .engine
+        //     .register_publisher(format!("{}/att", topic))
+        //     .await
+        //     .unwrap();
+
+        // //
+        // //
+        // let att = NumberAttributeServer::new(
+        //     self.engine.session.clone(),
+        //     topic,
+        //     cmd_receiver,
+        //     self.task_monitor_sender.clone(),
+        // )
+        // .await;
+
+        // Ok(att)
+
+        let topic: &String = self.topic.as_ref().unwrap();
         self.r#type = Some(NumberAttributeServer::r#type());
-
-        //
-        //
-        self.send_creation_notification().await;
-
-        let topic = self.topic.unwrap();
-
-        let cmd_receiver = self
-            .engine
-            .register_listener(format!("{}/cmd", topic), 50)
-            .await;
-
-        let att_publisher = self
-            .engine
-            .register_publisher(format!("{}/att", topic))
-            .await
-            .unwrap();
-
-        //
-        //
+        let (cmd_receiver, att_publisher) = self.common_ops(50).await;
         let att = NumberAttributeServer::new(
             self.engine.session.clone(),
-            topic,
+            topic.clone(),
             cmd_receiver,
             self.task_monitor_sender.clone(),
+            self.notification_channel.clone(),
         )
         .await;
-
         Ok(att)
     }
 }

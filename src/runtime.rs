@@ -15,11 +15,11 @@ use tokio::sync::{mpsc::channel, Notify};
 
 ///
 ///
-static PROD_ORDER_CHANNEL_SIZE: usize = 64;
+static PROD_ORDER_CHANNEL_SIZE: usize = 128;
 
 ///
 ///
-static NOTIFICATION_CHANNEL_SIZE: usize = 512;
+static NOTIFICATION_CHANNEL_SIZE: usize = 1024;
 
 /// Manage the execution instances
 ///
@@ -205,7 +205,12 @@ impl Runtime {
                     // production_order.device_settings = json!({});
                     let mut instance =
                         self.factory
-                            .produce(self.engine.clone(),  production_order.unwrap(), self.notification_channel.0.clone());
+                            .produce(
+                                self.engine.clone(),
+                                production_order.unwrap(),
+                                self.notification_channel.0.clone(),
+                                self.engine.namespace.clone(),
+                            );
                     //
                     let task_handle = tokio::spawn(async move {
                         loop {

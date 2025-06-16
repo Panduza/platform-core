@@ -1,7 +1,8 @@
+use crate::AlertNotification;
 use crate::Error;
 use crate::Logger;
+use crate::Notification;
 use bytes::Bytes;
-// use panduza::pubsub::Publisher;
 use panduza::task_monitor::NamedTaskHandle;
 use std::sync::Arc;
 use std::sync::Mutex;
@@ -55,6 +56,10 @@ pub struct StringAttributeServer {
     ///
     logger: Logger,
 
+    /// topic
+    ///
+    topic: String,
+
     ///
     ///
     session: Session,
@@ -67,9 +72,9 @@ pub struct StringAttributeServer {
     ///
     update_notifier: Arc<Notify>,
 
-    /// topic
+    /// Channel to send notifications
     ///
-    topic: String,
+    notification_channel: Sender<Notification>,
 
     /// query value
     ///
@@ -96,6 +101,7 @@ impl StringAttributeServer {
         topic: String,
         mut cmd_receiver: Subscriber<FifoChannelHandler<Sample>>,
         task_monitor_sender: Sender<NamedTaskHandle>,
+        notification_channel: Sender<Notification>,
     ) -> Self {
         //
         //
@@ -139,6 +145,7 @@ impl StringAttributeServer {
             update_notifier: n,
             topic: topic,
             current_value: query_value,
+            notification_channel: notification_channel,
         }
     }
 
@@ -162,5 +169,13 @@ impl StringAttributeServer {
         let value = received.payload().try_to_string().unwrap().to_string();
         let value = serde_json::from_str::<String>(&value).unwrap_or(value);
         Ok(value)
+    }
+
+    ///
+    ///
+    pub async fn trigger_alert<T: Into<String>>(&self, message: T) {
+        let notification =
+            Notification::Alert(AlertNotification::new(self.topic.clone(), message.into()));
+        self.notification_channel.send(notification).await.unwrap();
     }
 }

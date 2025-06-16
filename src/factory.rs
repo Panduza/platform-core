@@ -106,6 +106,7 @@ impl Factory {
         engine: Engine,
         production_order: ProductionOrder,
         notification_channel: Sender<Notification>,
+        namespace: Option<String>,
     ) -> Instance {
         let producer = self.producers.get(production_order.dref()).unwrap();
         let instance_actions = producer.produce().unwrap();
@@ -116,6 +117,7 @@ impl Factory {
             instance_actions,
             production_order.settings,
             notification_channel,
+            namespace,
         )
     }
 }
