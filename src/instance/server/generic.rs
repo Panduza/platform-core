@@ -2,6 +2,7 @@ use super::{CallbackEntry, CallbackId};
 use crate::Logger;
 use crate::Notification;
 use panduza::fbs::GenericBuffer;
+use panduza::task_monitor::NamedTaskHandle;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::mpsc::Sender;
@@ -34,6 +35,112 @@ pub struct GenericAttributeServer<B: GenericBuffer> {
 }
 
 impl<B: GenericBuffer> GenericAttributeServer<B> {
+    /// Logger getter
+    ///
+    pub fn logger(&self) -> &Logger {
+        &self.logger
+    }
+
+    ///
+    ///
+    pub async fn new(
+        session: Session,
+        topic: String,
+        task_monitor_sender: Sender<NamedTaskHandle>,
+        notification_channel: Sender<Notification>,
+    ) -> Self {
+        // Initialize async callbacks storage
+        let callbacks = Arc::new(Mutex::new(HashMap::<CallbackId, CallbackEntry<B>>::new()));
+
+        //
+        //
+        let query_value = Arc::new(Mutex::new(bool::default()));
+
+        // create a queryable to get value at initialization
+        //
+        let topic_clone = topic.clone();
+        let session_clone = session.clone();
+        let query_value_clone = query_value.clone();
+        let handle = tokio::spawn(async move {
+            let queryable = session_clone
+                .declare_queryable(format!("{}/att", topic_clone.clone()))
+                .await
+                .unwrap();
+
+            while let Ok(query) = queryable.recv_async().await {
+                // let value = query_value_clone.lock().unwrap().clone(); // Clone the value
+                // let pyl = Bytes::from(serde_json::to_string(&value).unwrap());
+                // query
+                //     .reply(format!("{}/att", topic_clone.clone()), pyl)
+                //     .await
+                //     .unwrap();
+            }
+            Ok(())
+        });
+        task_monitor_sender
+            .send((format!("{}/ATT/QUERY", &topic), handle))
+            .await
+            .unwrap();
+
+        //
+        let cmd_topic = format!("{}/cmd", &topic);
+        let cmd_subscriber = session.declare_subscriber(&cmd_topic).await.unwrap();
+
+        tokio::spawn({
+            let callbacks = callbacks.clone();
+            let last_value = last_value.clone();
+
+            // TODO => push this into a specific function for more readability
+            async move {
+                while let Ok(sample) = cmd_subscriber.recv_async().await {
+                    // Create Buffer from the received zbytes
+                    let buffer = B::from_zbytes(sample.payload().clone());
+
+                    // Update the last received value
+                    {
+                        let mut last = last_value.lock().await;
+                        *last = Some(buffer.clone());
+                    }
+
+                    // Trigger all async callbacks
+                    let callbacks_map = callbacks.lock().await;
+                    let mut futures = Vec::new();
+
+                    for (_id, callback_entry) in callbacks_map.iter() {
+                        // Check condition if present
+                        let should_trigger = if let Some(condition) = &callback_entry.condition {
+                            condition(&buffer)
+                        } else {
+                            true
+                        };
+
+                        if should_trigger {
+                            futures.push((callback_entry.callback)(buffer.clone()));
+                        }
+                    }
+
+                    // Drop the lock before awaiting futures
+                    drop(callbacks_map);
+
+                    // Execute all callbacks concurrently
+                    futures::future::join_all(futures).await;
+                }
+            }
+        });
+
+        //
+        //
+        Self {
+            logger: Logger::new_for_attribute_from_topic(topic.clone()),
+            session: session,
+            callbacks: callbacks,
+            next_callback_id: Arc::new(Mutex::new(0)),
+            cmd_topic: cmd_topic,
+            notification_channel: notification_channel,
+            current_value: query_value,
+        }
+    }
+
     // /// Create a new instance
     // pub async fn new(session: Session) -> Self {
     //     // Initialize async callbacks storage
