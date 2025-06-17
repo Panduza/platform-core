@@ -158,10 +158,6 @@ impl AttributeServerBuilder {
         &self,
         cmd_channel_size: usize,
     ) -> (Subscriber<FifoChannelHandler<Sample>>, Publisher) {
-        //
-        //
-        self.send_creation_notification().await;
-
         let topic = self.topic.as_ref().unwrap();
 
         println!("topic de base : {}", topic);
@@ -221,11 +217,14 @@ impl AttributeServerBuilder {
         let topic: &String = self.topic.as_ref().unwrap();
         println!("topic_boolean: {}", topic.clone());
         self.r#type = Some(BooleanAttributeServer::r#type());
-        let (cmd_receiver, att_publisher) = self.common_ops(50).await;
+
+        //
+        self.send_creation_notification().await;
+
+        //
         let att = BooleanAttributeServer::new(
             self.engine.session.clone(),
             topic.clone(),
-            cmd_receiver,
             self.task_monitor_sender.clone(),
             self.notification_channel.clone(),
         )
