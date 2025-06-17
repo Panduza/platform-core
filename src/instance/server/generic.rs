@@ -13,7 +13,7 @@ use zenoh::Session;
 
 /// Generic attribute implementation that can work with any buffer type that implements GenericBuffer
 #[derive(Clone)]
-pub struct GenericAttributeServer<B: GenericBuffer> {
+pub struct GenericAttributeServer<O: Clone, B: GenericBuffer> {
     /// Local logger
     logger: Logger,
 
@@ -21,7 +21,7 @@ pub struct GenericAttributeServer<B: GenericBuffer> {
     session: Session,
 
     /// Async callbacks storage
-    callbacks: Arc<Mutex<HashMap<CallbackId, CallbackEntry<B>>>>,
+    callbacks: Arc<Mutex<HashMap<CallbackId, CallbackEntry<O, B>>>>,
 
     /// Next callback ID
     next_callback_id: Arc<Mutex<CallbackId>>,
@@ -39,7 +39,7 @@ pub struct GenericAttributeServer<B: GenericBuffer> {
     current_value: Arc<Mutex<B>>,
 }
 
-impl<B: GenericBuffer> GenericAttributeServer<B> {
+impl<O: Clone, B: GenericBuffer> GenericAttributeServer<O, B> {
     /// Logger getter
     ///
     pub fn logger(&self) -> &Logger {
@@ -55,7 +55,7 @@ impl<B: GenericBuffer> GenericAttributeServer<B> {
         notification_channel: Sender<Notification>,
     ) -> Self {
         // Initialize async callbacks storage
-        let callbacks = Arc::new(Mutex::new(HashMap::<CallbackId, CallbackEntry<B>>::new()));
+        let callbacks = Arc::new(Mutex::new(HashMap::<CallbackId, CallbackEntry<O, B>>::new()));
 
         //
         //
@@ -167,7 +167,7 @@ impl<B: GenericBuffer> GenericAttributeServer<B> {
     /// Optionally, a condition can be provided to filter when the callback is triggered
     pub async fn add_callback<F, C>(&self, callback: F, condition: Option<C>) -> CallbackId
     where
-        F: Fn(B) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + Send>>
+        F: Fn(O, B) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + Send>>
             + Send
             + Sync
             + 'static,

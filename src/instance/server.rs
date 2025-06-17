@@ -12,26 +12,26 @@ pub mod string;
 pub mod trigger_v0;
 pub mod vector_f32_v0;
 
-/// Unique identifier for callbacks
-pub type CallbackId = u64;
+use panduza::attribute::CallbackId;
 
 /// Type alias for asynchronous callback function with generic type T
-pub type CallbackFn<T> =
-    Box<dyn Fn(T) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + Send>> + Send + Sync>;
+pub type CallbackFn<O, T> = Box<
+    dyn Fn(O, T) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + Send>> + Send + Sync,
+>;
 
 /// Type alias for condition function that filters events with generic type T
 pub type ConditionFn<T> = Box<dyn Fn(&T) -> bool + Send + Sync>;
 
 /// Asynchronous callback entry containing the callback and optional condition
-pub struct CallbackEntry<T> {
-    pub callback: CallbackFn<T>,
+pub struct CallbackEntry<O, T> {
+    pub callback: CallbackFn<O, T>,
     pub condition: Option<ConditionFn<T>>,
 }
 
 // Export the async generic attribute for easier access
 pub use generic::GenericAttributeServer;
 
-impl<T> std::fmt::Debug for CallbackEntry<T> {
+impl<O, T> std::fmt::Debug for CallbackEntry<O, T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("CallbackEntry")
             .field("callback", &"<async callback function>")
