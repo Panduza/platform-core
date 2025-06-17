@@ -11,11 +11,6 @@ use tokio::sync::mpsc::Sender;
 use tokio::sync::Mutex;
 use zenoh::Session;
 
-#[derive(Debug, Clone)]
-pub struct Responder {
-    pub test: String,
-}
-
 /// Generic attribute implementation that can work with any buffer type that implements GenericBuffer
 #[derive(Clone)]
 pub struct GenericAttributeServer<B: GenericBuffer> {
@@ -26,7 +21,7 @@ pub struct GenericAttributeServer<B: GenericBuffer> {
     session: Session,
 
     /// Async callbacks storage
-    callbacks: Arc<Mutex<HashMap<CallbackId, CallbackEntry<Responder, B>>>>,
+    callbacks: Arc<Mutex<HashMap<CallbackId, CallbackEntry<B>>>>,
 
     /// Next callback ID
     next_callback_id: Arc<Mutex<CallbackId>>,
@@ -60,9 +55,7 @@ impl<B: GenericBuffer> GenericAttributeServer<B> {
         notification_channel: Sender<Notification>,
     ) -> Self {
         // Initialize async callbacks storage
-        let callbacks = Arc::new(Mutex::new(
-            HashMap::<CallbackId, CallbackEntry<Responder, B>>::new(),
-        ));
+        let callbacks = Arc::new(Mutex::new(HashMap::<CallbackId, CallbackEntry<B>>::new()));
 
         //
         //
@@ -135,12 +128,7 @@ impl<B: GenericBuffer> GenericAttributeServer<B> {
                         };
 
                         if should_trigger {
-                            futures.push((callback_entry.callback)(
-                                Responder {
-                                    test: "p".to_string(),
-                                },
-                                buffer.clone(),
-                            ));
+                            futures.push((callback_entry.callback)(buffer.clone()));
                         }
                     }
 
@@ -186,7 +174,7 @@ impl<B: GenericBuffer> GenericAttributeServer<B> {
     /// Optionally, a condition can be provided to filter when the callback is triggered
     pub async fn add_callback<F, C>(&self, callback: F, condition: Option<C>) -> CallbackId
     where
-        F: Fn(Responder, B) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + Send>>
+        F: Fn(B) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + Send>>
             + Send
             + Sync
             + 'static,

@@ -1,4 +1,3 @@
-use crate::instance::server::generic::Responder;
 use crate::instance::server::GenericAttributeServer;
 use crate::Error;
 use crate::Logger;
@@ -62,10 +61,7 @@ impl BooleanAttributeServer {
     #[inline]
     pub async fn add_callback<F, C>(&self, callback: F, condition: Option<C>) -> CallbackId
     where
-        F: Fn(
-                Responder,
-                BooleanBuffer,
-            ) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + Send>>
+        F: Fn(BooleanBuffer) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + Send>>
             + Send
             + Sync
             + 'static,
