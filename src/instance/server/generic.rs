@@ -1,4 +1,5 @@
 use super::{CallbackEntry, CallbackId};
+use crate::Error;
 use crate::Logger;
 use crate::Notification;
 use panduza::fbs::GenericBuffer;
@@ -31,7 +32,7 @@ pub struct GenericAttributeServer<B: GenericBuffer> {
     notification_channel: Sender<Notification>,
 
     /// Current value
-    current_value: Arc<Mutex<bool>>,
+    current_value: Arc<Mutex<Option<B>>>,
 }
 
 impl<B: GenericBuffer> GenericAttributeServer<B> {
@@ -54,7 +55,7 @@ impl<B: GenericBuffer> GenericAttributeServer<B> {
 
         //
         //
-        let query_value = Arc::new(Mutex::new(bool::default()));
+        let query_value = Arc::new(Mutex::new(None));
 
         // create a queryable to get value at initialization
         //
@@ -88,19 +89,12 @@ impl<B: GenericBuffer> GenericAttributeServer<B> {
 
         tokio::spawn({
             let callbacks = callbacks.clone();
-            let last_value = last_value.clone();
 
             // TODO => push this into a specific function for more readability
             async move {
                 while let Ok(sample) = cmd_subscriber.recv_async().await {
                     // Create Buffer from the received zbytes
                     let buffer = B::from_zbytes(sample.payload().clone());
-
-                    // Update the last received value
-                    {
-                        let mut last = last_value.lock().await;
-                        *last = Some(buffer.clone());
-                    }
 
                     // Trigger all async callbacks
                     let callbacks_map = callbacks.lock().await;
@@ -137,7 +131,7 @@ impl<B: GenericBuffer> GenericAttributeServer<B> {
             next_callback_id: Arc::new(Mutex::new(0)),
             cmd_topic: cmd_topic,
             notification_channel: notification_channel,
-            current_value: query_value,
+            current_value: query_value.clone(),
         }
     }
 
@@ -213,6 +207,26 @@ impl<B: GenericBuffer> GenericAttributeServer<B> {
     //         last_value,
     //     }
     // }
+
+    ///
+    ///
+    pub async fn set<T>(&self, value: T) -> Result<(), Error>
+    where
+        T: Into<B>,
+    {
+        let buffer: B = value.into();
+
+        // Send the command
+        self.session
+            .put(&self.cmd_topic, buffer.to_zbytes())
+            .await
+            .unwrap();
+
+        // update the current queriable value
+        *self.current_value.lock().await = Some(buffer);
+
+        Ok(())
+    }
 
     // /// Send command and do not wait for validation
     // pub async fn shoot<T>(&mut self, value: T)

@@ -163,7 +163,6 @@ impl EngineBuilder {
     /// It will be used in plugin sync context
     ///
     pub fn new(options: EngineOptions) -> Self {
-
         Self {
             // options: options,
             options: options,
@@ -176,6 +175,5 @@ impl EngineBuilder {
         //
         // Finalize the engine
         Engine::new(session, namespace)
-
     }
 }
