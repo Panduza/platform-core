@@ -11,9 +11,14 @@ use tokio::sync::mpsc::Sender;
 use tokio::sync::Mutex;
 use zenoh::Session;
 
+#[derive(Debug, Clone)]
+pub struct Responder {
+    pub test: String,
+}
+
 /// Generic attribute implementation that can work with any buffer type that implements GenericBuffer
 #[derive(Clone)]
-pub struct GenericAttributeServer<O: Clone, B: GenericBuffer> {
+pub struct GenericAttributeServer<B: GenericBuffer> {
     /// Local logger
     logger: Logger,
 
@@ -21,7 +26,7 @@ pub struct GenericAttributeServer<O: Clone, B: GenericBuffer> {
     session: Session,
 
     /// Async callbacks storage
-    callbacks: Arc<Mutex<HashMap<CallbackId, CallbackEntry<O, B>>>>,
+    callbacks: Arc<Mutex<HashMap<CallbackId, CallbackEntry<Responder, B>>>>,
 
     /// Next callback ID
     next_callback_id: Arc<Mutex<CallbackId>>,
@@ -39,7 +44,7 @@ pub struct GenericAttributeServer<O: Clone, B: GenericBuffer> {
     current_value: Arc<Mutex<B>>,
 }
 
-impl<O: Clone, B: GenericBuffer> GenericAttributeServer<O, B> {
+impl<B: GenericBuffer> GenericAttributeServer<B> {
     /// Logger getter
     ///
     pub fn logger(&self) -> &Logger {
@@ -55,7 +60,9 @@ impl<O: Clone, B: GenericBuffer> GenericAttributeServer<O, B> {
         notification_channel: Sender<Notification>,
     ) -> Self {
         // Initialize async callbacks storage
-        let callbacks = Arc::new(Mutex::new(HashMap::<CallbackId, CallbackEntry<O, B>>::new()));
+        let callbacks = Arc::new(Mutex::new(
+            HashMap::<CallbackId, CallbackEntry<Responder, B>>::new(),
+        ));
 
         //
         //
@@ -84,12 +91,32 @@ impl<O: Clone, B: GenericBuffer> GenericAttributeServer<O, B> {
 
         //
         let cmd_topic = format!("{}/cmd", &topic);
+
+        //
+        //
+        Self {
+            logger: Logger::new_for_attribute_from_topic(topic.clone()),
+            session: session,
+            callbacks: callbacks,
+            next_callback_id: Arc::new(Mutex::new(0)),
+            topic: topic,
+            cmd_topic: cmd_topic,
+            notification_channel: notification_channel,
+            current_value: query_value.clone(),
+        }
+    }
+
+    /// Initialize the attribute server tasks
+    ///
+    pub async fn init(&self) {
+        let cmd_topic = self.cmd_topic.clone();
+        let session = self.session.clone();
+        let callbacks = self.callbacks.clone();
+
         let cmd_subscriber = session.declare_subscriber(&cmd_topic).await.unwrap();
 
         tokio::spawn({
             let callbacks = callbacks.clone();
-
-            // TODO => push this into a specific function for more readability
             async move {
                 while let Ok(sample) = cmd_subscriber.recv_async().await {
                     // Create Buffer from the received zbytes
@@ -108,7 +135,12 @@ impl<O: Clone, B: GenericBuffer> GenericAttributeServer<O, B> {
                         };
 
                         if should_trigger {
-                            futures.push((callback_entry.callback)(buffer.clone()));
+                            futures.push((callback_entry.callback)(
+                                Responder {
+                                    test: "p".to_string(),
+                                },
+                                buffer.clone(),
+                            ));
                         }
                     }
 
@@ -120,19 +152,6 @@ impl<O: Clone, B: GenericBuffer> GenericAttributeServer<O, B> {
                 }
             }
         });
-
-        //
-        //
-        Self {
-            logger: Logger::new_for_attribute_from_topic(topic.clone()),
-            session: session,
-            callbacks: callbacks,
-            next_callback_id: Arc::new(Mutex::new(0)),
-            topic: topic,
-            cmd_topic: cmd_topic,
-            notification_channel: notification_channel,
-            current_value: query_value.clone(),
-        }
     }
 
     ///
@@ -167,7 +186,7 @@ impl<O: Clone, B: GenericBuffer> GenericAttributeServer<O, B> {
     /// Optionally, a condition can be provided to filter when the callback is triggered
     pub async fn add_callback<F, C>(&self, callback: F, condition: Option<C>) -> CallbackId
     where
-        F: Fn(O, B) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + Send>>
+        F: Fn(Responder, B) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + Send>>
             + Send
             + Sync
             + 'static,

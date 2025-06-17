@@ -1,3 +1,4 @@
+use crate::instance::server::generic::Responder;
 use crate::instance::server::GenericAttributeServer;
 use crate::Error;
 use crate::Logger;
@@ -12,7 +13,7 @@ use zenoh::Session;
 ///
 ///
 pub struct BooleanAttributeServer {
-    pub inner: GenericAttributeServer<Self, BooleanBuffer>,
+    pub inner: GenericAttributeServer<BooleanBuffer>,
 }
 
 impl BooleanAttributeServer {
@@ -36,7 +37,7 @@ impl BooleanAttributeServer {
         task_monitor_sender: Sender<NamedTaskHandle>,
         notification_channel: Sender<Notification>,
     ) -> Self {
-        let inner = GenericAttributeServer::<Self, BooleanBuffer>::new(
+        let inner = GenericAttributeServer::<BooleanBuffer>::new(
             session,
             topic,
             task_monitor_sender,
@@ -61,7 +62,10 @@ impl BooleanAttributeServer {
     #[inline]
     pub async fn add_callback<F, C>(&self, callback: F, condition: Option<C>) -> CallbackId
     where
-        F: Fn(BooleanBuffer) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + Send>>
+        F: Fn(
+                Responder,
+                BooleanBuffer,
+            ) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + Send>>
             + Send
             + Sync
             + 'static,
