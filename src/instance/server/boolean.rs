@@ -42,6 +42,8 @@ impl BooleanAttributeServer {
             task_monitor_sender,
             notification_channel,
         )
+        .await
+        .start_task_command_processing()
         .await;
 
         Self { inner }

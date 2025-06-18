@@ -101,7 +101,7 @@ impl<B: GenericBuffer> GenericAttributeServer<B> {
 
     /// Initialize the attribute server tasks
     ///
-    pub async fn init(&self) {
+    pub async fn start_task_command_processing(self) -> Self {
         let cmd_topic = self.cmd_topic.clone();
         let session = self.session.clone();
         let callbacks = self.callbacks.clone();
@@ -140,6 +140,8 @@ impl<B: GenericBuffer> GenericAttributeServer<B> {
                 }
             }
         });
+
+        self
     }
 
     ///
