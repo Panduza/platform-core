@@ -123,13 +123,14 @@ impl<B: GenericBuffer> GenericAttributeServer<B> {
         Ok(())
     }
 
+    ///
+    ///
     pub async fn ack_command<T, C>(&self, value: T, command: C)
     where
         T: Into<B>,
-        C: Into<GenericBuffer>,
+        C: GenericBuffer,
     {
         let buffer: B = value.into();
-        let command_buffer: GenericBuffer = command.into();
 
         // Send the command with acknowledgment
         self.session
