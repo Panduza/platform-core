@@ -12,7 +12,7 @@ use tokio::sync::Mutex;
 use zenoh::Session;
 
 /// Generic attribute implementation that can work with any buffer type that implements GenericBuffer
-#[derive(Clone)]
+// #[derive(Clone)]
 pub struct GenericAttributeServer<B: GenericBuffer> {
     /// Local logger
     logger: Logger,
@@ -26,14 +26,11 @@ pub struct GenericAttributeServer<B: GenericBuffer> {
     /// Next callback ID
     next_callback_id: Arc<Mutex<CallbackId>>,
 
-    /// Topic of the attribute
-    topic: String,
-
     /// Attribute topic
     att_topic: String,
 
-    /// Command topic
-    cmd_topic: String,
+    /// Topic of the attribute
+    topic: String,
 
     /// Channel to send notifications
     notification_channel: Sender<Notification>,
@@ -61,32 +58,35 @@ impl<B: GenericBuffer> GenericAttributeServer<B> {
         let callbacks = Arc::new(Mutex::new(HashMap::<CallbackId, CallbackEntry<B>>::new()));
 
         //
+        let cmd_topic = format!("{}/cmd", &topic);
+        let att_topic = format!("{}/att", &topic);
+
         //
         let query_value = Arc::new(Mutex::new(B::default()));
 
-        // create a queryable to get value at initialization
         //
-        let topic_clone = topic.clone();
-        let session_clone = session.clone();
-        let query_value_clone = query_value.clone();
-        let handle = tokio::spawn(async move {
-            let att_topic = format!("{}/att", topic_clone.clone());
+        let handle_query_processing = tokio::spawn(task_query_processing::<B>(
+            session.clone(),
+            att_topic.clone(),
+            query_value.clone(),
+        ));
 
-            let queryable = session_clone.declare_queryable(&att_topic).await.unwrap();
-
-            while let Ok(query) = queryable.recv_async().await {
-                let p = query_value_clone.lock().await.to_zbytes();
-                query.reply(&att_topic, p).await.unwrap();
-            }
-            Ok(())
-        });
+        //
         task_monitor_sender
-            .send((format!("{}/ATT/QUERY", &topic), handle))
+            .send((format!("{}/ATT/QRY", &topic), handle_query_processing))
             .await
             .unwrap();
 
         //
-        let cmd_topic = format!("{}/cmd", &topic);
+        let handle_command_processing = tokio::spawn(task_command_processing::<B>(
+            session.clone(),
+            cmd_topic.clone(),
+            callbacks.clone(),
+        ));
+        task_monitor_sender
+            .send((format!("{}/CMD/SUB", &topic), handle_command_processing))
+            .await
+            .unwrap();
 
         //
         //
@@ -95,60 +95,11 @@ impl<B: GenericBuffer> GenericAttributeServer<B> {
             session: session,
             callbacks: callbacks,
             next_callback_id: Arc::new(Mutex::new(0)),
-            att_topic: format!("{}/att", &topic),
-            cmd_topic: cmd_topic,
+            att_topic: att_topic,
             topic: topic,
             notification_channel: notification_channel,
             current_value: query_value.clone(),
         }
-    }
-
-    /// Initialize the attribute server tasks
-    ///
-    pub async fn start_task_command_processing(self) -> Self {
-        let cmd_topic = self.cmd_topic.clone();
-        let session = self.session.clone();
-        let callbacks = self.callbacks.clone();
-
-        let cmd_subscriber = session.declare_subscriber(&cmd_topic).await.unwrap();
-
-        tokio::spawn({
-            let callbacks = callbacks.clone();
-            async move {
-                while let Ok(sample) = cmd_subscriber.recv_async().await {
-                    // ultrace
-                    println!("Generic - recv_async - key: {}", sample.key_expr());
-
-                    // Create Buffer from the received zbytes
-                    let buffer = B::from_zbytes(sample.payload().clone());
-
-                    // Trigger all async callbacks
-                    let callbacks_map = callbacks.lock().await;
-                    let mut futures = Vec::new();
-
-                    for (_id, callback_entry) in callbacks_map.iter() {
-                        // Check condition if present
-                        let should_trigger = if let Some(condition) = &callback_entry.condition {
-                            condition(&buffer)
-                        } else {
-                            true
-                        };
-
-                        if should_trigger {
-                            futures.push((callback_entry.callback)(buffer.clone()));
-                        }
-                    }
-
-                    // Drop the lock before awaiting futures
-                    drop(callbacks_map);
-
-                    // Execute all callbacks concurrently
-                    futures::future::join_all(futures).await;
-                }
-            }
-        });
-
-        self
     }
 
     ///
@@ -226,4 +177,69 @@ impl<B: GenericBuffer> GenericAttributeServer<B> {
     // pub fn cmd_topic(&self) -> &str {
     //     &self.cmd_topic
     // }
+}
+
+/// Task command processing function that listens for commands and triggers callbacks
+///
+pub async fn task_command_processing<B: GenericBuffer + Send + Sync + 'static>(
+    session: zenoh::Session,
+    cmd_topic: String,
+    callbacks: std::sync::Arc<
+        tokio::sync::Mutex<std::collections::HashMap<CallbackId, CallbackEntry<B>>>,
+    >,
+) -> Result<(), String> {
+    // Declare the command subscriber
+    let cmd_subscriber = session.declare_subscriber(&cmd_topic).await.unwrap();
+
+    // Loop to receive commands asynchronously
+    while let Ok(sample) = cmd_subscriber.recv_async().await {
+        // Create Buffer from the received zbytes
+        let buffer = B::from_zbytes(sample.payload().clone());
+
+        // Trigger all async callbacks
+        let callbacks_map = callbacks.lock().await;
+        let mut futures = Vec::new();
+
+        for (_id, callback_entry) in callbacks_map.iter() {
+            // Check condition if present
+            let should_trigger = if let Some(condition) = &callback_entry.condition {
+                condition(&buffer)
+            } else {
+                true
+            };
+
+            if should_trigger {
+                futures.push((callback_entry.callback)(buffer.clone()));
+            }
+        }
+
+        // Drop the lock before awaiting futures
+        drop(callbacks_map);
+
+        // Execute all callbacks concurrently
+        futures::future::join_all(futures).await;
+    }
+
+    Ok(())
+}
+
+/// Task query processing function that listens for queries and replies with the current value
+///
+pub async fn task_query_processing<B: GenericBuffer + Send + Sync + 'static>(
+    session: zenoh::Session,
+    att_topic: String,
+    query_value: std::sync::Arc<tokio::sync::Mutex<B>>,
+) -> Result<(), String> {
+    let queryable = session
+        .declare_queryable(&att_topic)
+        .await
+        .map_err(|e| e.to_string())?;
+    while let Ok(query) = queryable.recv_async().await {
+        let p = query_value.lock().await.to_zbytes();
+        query
+            .reply(&att_topic, p)
+            .await
+            .map_err(|e| e.to_string())?;
+    }
+    Ok(())
 }

@@ -5,6 +5,7 @@ use crate::Notification;
 use panduza::attribute::CallbackId;
 use panduza::fbs::BooleanBuffer;
 use panduza::task_monitor::NamedTaskHandle;
+use std::sync::Arc;
 use tokio::sync::mpsc::Sender;
 use zenoh::Session;
 
@@ -12,7 +13,7 @@ use zenoh::Session;
 ///
 ///
 pub struct BooleanAttributeServer {
-    pub inner: GenericAttributeServer<BooleanBuffer>,
+    pub inner: Arc<GenericAttributeServer<BooleanBuffer>>,
 }
 
 impl BooleanAttributeServer {
@@ -42,11 +43,11 @@ impl BooleanAttributeServer {
             task_monitor_sender,
             notification_channel,
         )
-        .await
-        .start_task_command_processing()
         .await;
 
-        Self { inner }
+        Self {
+            inner: Arc::new(inner),
+        }
     }
 
     /// Set the value of the attribute
