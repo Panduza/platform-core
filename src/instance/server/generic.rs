@@ -29,6 +29,9 @@ pub struct GenericAttributeServer<B: GenericBuffer> {
     /// Topic of the attribute
     topic: String,
 
+    /// Attribute topic
+    att_topic: String,
+
     /// Command topic
     cmd_topic: String,
 
@@ -92,8 +95,9 @@ impl<B: GenericBuffer> GenericAttributeServer<B> {
             session: session,
             callbacks: callbacks,
             next_callback_id: Arc::new(Mutex::new(0)),
-            topic: topic,
+            att_topic: format!("{}/att", &topic),
             cmd_topic: cmd_topic,
+            topic: topic,
             notification_channel: notification_channel,
             current_value: query_value.clone(),
         }
@@ -112,6 +116,9 @@ impl<B: GenericBuffer> GenericAttributeServer<B> {
             let callbacks = callbacks.clone();
             async move {
                 while let Ok(sample) = cmd_subscriber.recv_async().await {
+                    // ultrace
+                    println!("Generic - recv_async - key: {}", sample.key_expr());
+
                     // Create Buffer from the received zbytes
                     let buffer = B::from_zbytes(sample.payload().clone());
 
@@ -154,7 +161,7 @@ impl<B: GenericBuffer> GenericAttributeServer<B> {
 
         // Send the command
         self.session
-            .put(&self.cmd_topic, buffer.to_zbytes())
+            .put(&self.att_topic, buffer.to_zbytes())
             .await
             .unwrap();
 
