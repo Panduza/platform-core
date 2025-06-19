@@ -83,12 +83,13 @@ impl<B: GenericBuffer> GenericAttributeServer<B> {
             cmd_topic.clone(),
             callbacks.clone(),
         ));
+
+        //
         task_monitor_sender
             .send((format!("{}/CMD/SUB", &topic), handle_command_processing))
             .await
             .unwrap();
 
-        //
         //
         Self {
             logger: Logger::new_for_attribute_from_topic(topic.clone()),
@@ -172,11 +173,6 @@ impl<B: GenericBuffer> GenericAttributeServer<B> {
         let callbacks = self.callbacks.lock().await;
         callbacks.len()
     }
-
-    // /// Get the command topic
-    // pub fn cmd_topic(&self) -> &str {
-    //     &self.cmd_topic
-    // }
 }
 
 /// Task command processing function that listens for commands and triggers callbacks

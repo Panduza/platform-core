@@ -50,6 +50,7 @@ impl SiDataPack {
     }
 }
 
+#[derive(Clone)]
 ///
 ///
 pub struct SiAttributeServer {
@@ -67,7 +68,7 @@ pub struct SiAttributeServer {
 
     ///
     ///
-    cmd_receiver: Subscriber<FifoChannelHandler<Sample>>,
+    // cmd_receiver: Subscriber<FifoChannelHandler<Sample>>,
 
     ///
     ///
@@ -158,7 +159,7 @@ impl SiAttributeServer {
             logger: Logger::new_for_attribute_from_topic(topic.clone()),
             session: session,
             topic: topic,
-            cmd_receiver: cmd_receiver,
+            // cmd_receiver: cmd_receiver,
             update_notifier: n.into(),
             unit: unit.into(),
             min: min,
@@ -205,12 +206,10 @@ impl SiAttributeServer {
         Ok(())
     }
 
-    ///
-    ///
-    pub async fn wait_for_commands(&self) -> Result<NumberBuffer, Error> {
-        let received = self.cmd_receiver.recv_async().await.unwrap();
-        let value: NumberBuffer =
-            NumberBuffer::from_raw_data(Bytes::copy_from_slice(&received.payload().to_bytes()));
-        Ok(value)
-    }
+    // pub async fn wait_for_commands(&self) -> Result<NumberBuffer, Error> {
+    //     let received = self.cmd_receiver.recv_async().await.unwrap();
+    //     let value: NumberBuffer =
+    //         NumberBuffer::from_raw_data(Bytes::copy_from_slice(&received.payload().to_bytes()));
+    //     Ok(value)
+    // }
 }

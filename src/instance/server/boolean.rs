@@ -59,10 +59,25 @@ impl BooleanAttributeServer {
         self.inner.set(value).await
     }
 
-    /// Add a callback that will be triggered when receiving BooleanBuffer messages
-    /// Optionally, a condition can be provided to filter when the callback is triggered
+    /// Ajoute un callback sans condition (toujours déclenché)
+    ///
     #[inline]
-    pub async fn add_callback<F, C>(&self, callback: F, condition: Option<C>) -> CallbackId
+    pub async fn add_callback<F>(&self, callback: F) -> CallbackId
+    where
+        F: Fn(BooleanBuffer) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + Send>>
+            + Send
+            + Sync
+            + 'static,
+    {
+        self.inner
+            .add_callback(callback, Option::<fn(&BooleanBuffer) -> bool>::None)
+            .await
+    }
+
+    /// Ajoute un callback avec une condition personnalisée
+    ///
+    #[inline]
+    pub async fn add_callback_with_condition<F, C>(&self, callback: F, condition: C) -> CallbackId
     where
         F: Fn(BooleanBuffer) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + Send>>
             + Send
@@ -70,7 +85,7 @@ impl BooleanAttributeServer {
             + 'static,
         C: Fn(&BooleanBuffer) -> bool + Send + Sync + 'static,
     {
-        self.inner.add_callback(callback, condition).await
+        self.inner.add_callback(callback, Some(condition)).await
     }
 
     /// Remove a callback by its ID
