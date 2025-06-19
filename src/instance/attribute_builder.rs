@@ -217,16 +217,13 @@ impl AttributeServerBuilder {
         // Set string representation of the type
         self.r#type = Some("boolean".to_string());
 
-        let topic: &String = self.topic.as_ref().unwrap();
-        println!("topic_boolean: {}", topic.clone());
-
         //
         self.send_creation_notification().await;
 
         //
         let att = BooleanAttributeServer::new(
             self.engine.session.clone(),
-            topic.clone(),
+            self.topic.unwrap(),
             self.task_monitor_sender.clone(),
             self.notification_channel.clone(),
         )

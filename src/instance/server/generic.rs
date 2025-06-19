@@ -123,6 +123,21 @@ impl<B: GenericBuffer> GenericAttributeServer<B> {
         Ok(())
     }
 
+    pub async fn ack_command<T, C>(&self, value: T, command: C)
+    where
+        T: Into<B>,
+        C: Into<GenericBuffer>,
+    {
+        let buffer: B = value.into();
+        let command_buffer: GenericBuffer = command.into();
+
+        // Send the command with acknowledgment
+        self.session
+            .put(&self.att_topic, buffer.to_zbytes())
+            .await
+            .unwrap();
+    }
+
     ///
     ///
     pub async fn trigger_alert<T: Into<String>>(&self, message: T) {
