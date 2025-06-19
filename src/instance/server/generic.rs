@@ -132,6 +132,10 @@ impl<B: GenericBuffer> GenericAttributeServer<B> {
     {
         let buffer: B = value.into();
 
+        // build the answer buffer
+        // with command sequence id
+        // & value
+
         // Send the command with acknowledgment
         self.session
             .put(&self.att_topic, buffer.to_zbytes())
