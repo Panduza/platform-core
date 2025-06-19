@@ -25,12 +25,6 @@ impl BooleanAttributeServer {
 
     ///
     ///
-    pub fn r#type() -> String {
-        "boolean".to_string()
-    }
-
-    ///
-    ///
     pub async fn new(
         session: Session,
         topic: String,
@@ -62,7 +56,7 @@ impl BooleanAttributeServer {
     /// Ajoute un callback sans condition (toujours déclenché)
     ///
     #[inline]
-    pub async fn add_callback<F>(&self, callback: F) -> CallbackId
+    pub fn add_callback<F>(&self, callback: F) -> impl std::future::Future<Output = CallbackId> + '_
     where
         F: Fn(BooleanBuffer) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + Send>>
             + Send
@@ -71,13 +65,16 @@ impl BooleanAttributeServer {
     {
         self.inner
             .add_callback(callback, Option::<fn(&BooleanBuffer) -> bool>::None)
-            .await
     }
 
     /// Ajoute un callback avec une condition personnalisée
     ///
     #[inline]
-    pub async fn add_callback_with_condition<F, C>(&self, callback: F, condition: C) -> CallbackId
+    pub fn add_callback_with_condition<F, C>(
+        &self,
+        callback: F,
+        condition: C,
+    ) -> impl std::future::Future<Output = CallbackId> + '_
     where
         F: Fn(BooleanBuffer) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + Send>>
             + Send
@@ -85,19 +82,26 @@ impl BooleanAttributeServer {
             + 'static,
         C: Fn(&BooleanBuffer) -> bool + Send + Sync + 'static,
     {
-        self.inner.add_callback(callback, Some(condition)).await
+        self.inner.add_callback(callback, Some(condition))
     }
 
     /// Remove a callback by its ID
     ///
     #[inline]
-    pub async fn remove_callback(&self, callback_id: CallbackId) -> bool {
-        self.inner.remove_callback(callback_id).await
+    pub fn remove_callback(
+        &self,
+        callback_id: CallbackId,
+    ) -> impl std::future::Future<Output = bool> + '_ {
+        self.inner.remove_callback(callback_id)
     }
 
     ///
     ///
-    pub async fn trigger_alert<T: Into<String>>(&self, message: T) {
-        self.inner.trigger_alert(message).await;
+    #[inline]
+    pub fn trigger_alert<T: Into<String> + 'static>(
+        &self,
+        message: T,
+    ) -> impl std::future::Future<Output = ()> + '_ {
+        self.inner.trigger_alert(message)
     }
 }

@@ -214,9 +214,11 @@ impl AttributeServerBuilder {
     /// BOOLEAN
     ///
     pub async fn start_as_boolean(mut self) -> Result<BooleanAttributeServer, Error> {
+        // Set string representation of the type
+        self.r#type = Some("boolean".to_string());
+
         let topic: &String = self.topic.as_ref().unwrap();
         println!("topic_boolean: {}", topic.clone());
-        self.r#type = Some(BooleanAttributeServer::r#type());
 
         //
         self.send_creation_notification().await;
