@@ -3,7 +3,7 @@ use crate::AlertNotification;
 use crate::Error;
 use crate::Logger;
 use crate::Notification;
-use panduza::fbs::GenericBuffer;
+use panduza::fbs::PanduzaBuffer;
 use panduza::task_monitor::NamedTaskHandle;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -11,9 +11,9 @@ use tokio::sync::mpsc::Sender;
 use tokio::sync::Mutex;
 use zenoh::Session;
 
-/// Generic attribute implementation that can work with any buffer type that implements GenericBuffer
+/// Generic attribute implementation that can work with any buffer type that implements PanduzaBuffer
 // #[derive(Clone)]
-pub struct GenericAttributeServer<B: GenericBuffer> {
+pub struct GenericAttributeServer<B: PanduzaBuffer> {
     /// Local logger
     logger: Logger,
 
@@ -39,7 +39,7 @@ pub struct GenericAttributeServer<B: GenericBuffer> {
     current_value: Arc<Mutex<B>>,
 }
 
-impl<B: GenericBuffer> GenericAttributeServer<B> {
+impl<B: PanduzaBuffer> GenericAttributeServer<B> {
     /// Logger getter
     ///
     pub fn logger(&self) -> &Logger {
@@ -113,7 +113,7 @@ impl<B: GenericBuffer> GenericAttributeServer<B> {
 
         // Send the command
         self.session
-            .put(&self.att_topic, buffer.to_zbytes())
+            .put(&self.att_topic, buffer.clone().to_zbytes())
             .await
             .unwrap();
 
@@ -125,16 +125,13 @@ impl<B: GenericBuffer> GenericAttributeServer<B> {
 
     ///
     ///
-    pub async fn ack_command<T, C>(&self, value: T, command: C)
+    pub async fn reply_to<T, C>(&self, command: &C, value: T)
     where
         T: Into<B>,
-        C: GenericBuffer,
+        C: PanduzaBuffer,
     {
-        let buffer: B = value.into();
-
-        // build the answer buffer
-        // with command sequence id
-        // & value
+        let mut buffer: B = value.into();
+        buffer = buffer.with_sequence(command.sequence()).with_source(0);
 
         // Send the command with acknowledgment
         self.session
@@ -197,7 +194,7 @@ impl<B: GenericBuffer> GenericAttributeServer<B> {
 
 /// Task command processing function that listens for commands and triggers callbacks
 ///
-pub async fn task_command_processing<B: GenericBuffer + Send + Sync + 'static>(
+pub async fn task_command_processing<B: PanduzaBuffer + Send + Sync + 'static>(
     session: zenoh::Session,
     cmd_topic: String,
     callbacks: std::sync::Arc<
@@ -210,7 +207,7 @@ pub async fn task_command_processing<B: GenericBuffer + Send + Sync + 'static>(
     // Loop to receive commands asynchronously
     while let Ok(sample) = cmd_subscriber.recv_async().await {
         // Create Buffer from the received zbytes
-        let buffer = B::from_zbytes(sample.payload().clone());
+        let buffer = B::build_from_zbytes(sample.payload().clone());
 
         // Trigger all async callbacks
         let callbacks_map = callbacks.lock().await;
@@ -241,7 +238,7 @@ pub async fn task_command_processing<B: GenericBuffer + Send + Sync + 'static>(
 
 /// Task query processing function that listens for queries and replies with the current value
 ///
-pub async fn task_query_processing<B: GenericBuffer + Send + Sync + 'static>(
+pub async fn task_query_processing<B: PanduzaBuffer + Send + Sync + 'static>(
     session: zenoh::Session,
     att_topic: String,
     query_value: std::sync::Arc<tokio::sync::Mutex<B>>,
@@ -251,7 +248,7 @@ pub async fn task_query_processing<B: GenericBuffer + Send + Sync + 'static>(
         .await
         .map_err(|e| e.to_string())?;
     while let Ok(query) = queryable.recv_async().await {
-        let p = query_value.lock().await.to_zbytes();
+        let p = query_value.lock().await.clone().to_zbytes();
         query
             .reply(&att_topic, p)
             .await
