@@ -222,10 +222,10 @@ impl AttributeServerBuilder {
 
         //
         let att = BooleanAttributeServer::new(
-            self.engine.session.clone(),
+            self.engine.session,
             self.topic.unwrap(),
-            self.task_monitor_sender.clone(),
-            self.notification_channel.clone(),
+            self.task_monitor_sender,
+            self.notification_channel,
         )
         .await;
         Ok(att)

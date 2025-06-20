@@ -47,8 +47,11 @@ impl BooleanAttributeServer {
 
     /// Set the value of the attribute
     ///
-    pub async fn set(&self, value: bool) -> Result<(), Error> {
-        let buffer = BooleanBuffer::from(value);
+    pub async fn set<V>(&self, value: V) -> Result<(), Error>
+    where
+        V: Into<bool>,
+    {
+        let buffer = BooleanBuffer::from(value.into());
         self.inner.set(buffer).await
     }
 
