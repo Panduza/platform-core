@@ -214,14 +214,24 @@ impl AttributeServerBuilder {
     /// BOOLEAN
     ///
     pub async fn start_as_boolean(mut self) -> Result<BooleanAttributeServer, Error> {
-        // Set string representation of the type
         self.r#type = Some("boolean".to_string());
-
-        //
         self.send_creation_notification().await;
-
-        //
         let att = BooleanAttributeServer::new(
+            self.engine.session,
+            self.topic.unwrap(),
+            self.task_monitor_sender,
+            self.notification_channel,
+        )
+        .await;
+        Ok(att)
+    }
+
+    /// NUMBER
+    ///
+    pub async fn start_as_number(mut self) -> Result<NumberAttributeServer, Error> {
+        self.r#type = Some("number".to_string());
+        self.send_creation_notification().await;
+        let att = NumberAttributeServer::new(
             self.engine.session,
             self.topic.unwrap(),
             self.task_monitor_sender,
@@ -383,40 +393,40 @@ impl AttributeServerBuilder {
         Ok(att)
     }
 
-    ///
-    ///
-    pub async fn start_as_si<N: Into<String>>(
-        mut self,
-        unit: N,
-        min: f64,
-        max: f64,
-        decimals: usize,
-    ) -> Result<SiAttributeServer, Error> {
-        let topic = self.topic.as_ref().unwrap();
-        self.r#type = Some(SiAttributeServer::r#type());
+    // ///
+    // ///
+    // pub async fn start_as_si<N: Into<String>>(
+    //     mut self,
+    //     unit: N,
+    //     min: f64,
+    //     max: f64,
+    //     decimals: usize,
+    // ) -> Result<SiAttributeServer, Error> {
+    //     let topic = self.topic.as_ref().unwrap();
+    //     self.r#type = Some(SiAttributeServer::r#type());
 
-        let unit = unit.into();
-        self.settings = Some(json!({
-            "unit": unit.clone(),
-            "min": min,
-            "max": max,
-            "decimals": decimals,
-        }));
+    //     let unit = unit.into();
+    //     self.settings = Some(json!({
+    //         "unit": unit.clone(),
+    //         "min": min,
+    //         "max": max,
+    //         "decimals": decimals,
+    //     }));
 
-        let (cmd_receiver, att_publisher) = self.common_ops(50).await;
-        let att = SiAttributeServer::new(
-            self.engine.session.clone(),
-            topic.clone(),
-            cmd_receiver,
-            unit.clone(),
-            min,
-            max,
-            decimals,
-            self.task_monitor_sender.clone(),
-        )
-        .await;
-        Ok(att)
-    }
+    //     let (cmd_receiver, att_publisher) = self.common_ops(50).await;
+    //     let att = SiAttributeServer::new(
+    //         self.engine.session.clone(),
+    //         topic.clone(),
+    //         cmd_receiver,
+    //         unit.clone(),
+    //         min,
+    //         max,
+    //         decimals,
+    //         self.task_monitor_sender.clone(),
+    //     )
+    //     .await;
+    //     Ok(att)
+    // }
 
     ///
     ///
@@ -508,56 +518,6 @@ impl AttributeServerBuilder {
         self.r#type = Some(BytesAttributeServer::r#type());
         let (cmd_receiver, att_publisher) = self.common_ops(50).await;
         let att = BytesAttributeServer::new(
-            self.engine.session.clone(),
-            topic.clone(),
-            cmd_receiver,
-            self.task_monitor_sender.clone(),
-            self.notification_channel.clone(),
-        )
-        .await;
-        Ok(att)
-    }
-
-    /// NUMBER
-    ///
-    pub async fn start_as_number(mut self) -> Result<NumberAttributeServer, Error> {
-        // //
-        // //
-        // self.r#type = Some(NumberAttributeServer::r#type());
-
-        // //
-        // //
-        // self.send_creation_notification().await;
-
-        // let topic = self.topic.unwrap();
-
-        // let cmd_receiver = self
-        //     .engine
-        //     .register_listener(format!("{}/cmd", topic), 50)
-        //     .await;
-
-        // let att_publisher = self
-        //     .engine
-        //     .register_publisher(format!("{}/att", topic))
-        //     .await
-        //     .unwrap();
-
-        // //
-        // //
-        // let att = NumberAttributeServer::new(
-        //     self.engine.session.clone(),
-        //     topic,
-        //     cmd_receiver,
-        //     self.task_monitor_sender.clone(),
-        // )
-        // .await;
-
-        // Ok(att)
-
-        let topic: &String = self.topic.as_ref().unwrap();
-        self.r#type = Some(NumberAttributeServer::r#type());
-        let (cmd_receiver, att_publisher) = self.common_ops(50).await;
-        let att = NumberAttributeServer::new(
             self.engine.session.clone(),
             topic.clone(),
             cmd_receiver,
