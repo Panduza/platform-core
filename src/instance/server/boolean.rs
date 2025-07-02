@@ -51,7 +51,11 @@ impl BooleanAttributeServer {
     where
         V: Into<bool>,
     {
-        let buffer = BooleanBuffer::from(value.into());
+        let buffer = BooleanBuffer::from(value.into())
+            .with_source(0)
+            .with_random_sequence()
+            .build()
+            .unwrap();
         self.inner.set(buffer).await
     }
 

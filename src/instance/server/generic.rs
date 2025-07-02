@@ -131,7 +131,11 @@ impl<B: PanduzaBuffer> GenericAttributeServer<B> {
         C: PanduzaBuffer,
     {
         let mut buffer: B = value.into();
-        buffer = buffer.with_sequence(command.sequence()).with_source(0);
+        buffer = buffer
+            .with_sequence(command.as_message().header().unwrap().sequence())
+            .with_source(0)
+            .build()
+            .unwrap();
 
         // Send the command with acknowledgment
         self.session
