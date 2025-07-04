@@ -125,12 +125,17 @@ impl AttributeServerBuilder {
         self
     }
 
-    ///
+    // ------------------------------------------------------------------------
+
+    /// Send a notification to the platform
     ///
     async fn send_creation_notification(&self) {
         //
         // Debug
-        // println!("channel send_creation_notification !!");
+        // println!(
+        //     "send_creation_notification '{}' !",
+        //     self.topic.as_ref().unwrap()
+        // );
 
         //
         //
@@ -148,9 +153,9 @@ impl AttributeServerBuilder {
             )
             .await
             .unwrap();
-
-        // println!("channel send_creation_notification done !!");
     }
+
+    // ------------------------------------------------------------------------
 
     ///
     ///
