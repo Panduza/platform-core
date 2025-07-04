@@ -5,7 +5,6 @@ use super::server::notification_v0::NotificationAttributeServer;
 use super::server::number::NumberAttributeServer;
 use super::server::r#enum::EnumAttributeServer;
 use super::server::sample::SampleAttributeServer;
-use super::server::si::SiAttributeServer;
 use super::server::status_v0::StatusAttributeServer;
 use super::server::string::StringAttributeServer;
 use super::server::trigger_v0::TriggerAttributeServer;
@@ -16,11 +15,9 @@ use crate::AttributeNotification;
 use crate::Engine;
 use crate::Error;
 use crate::Notification;
-// use panduza::pubsub::Publisher;
 use panduza::task_monitor::NamedTaskHandle;
 use serde_json::json;
 use tokio::sync::mpsc::Sender;
-use tracing::instrument::WithSubscriber;
 use zenoh::handlers::FifoChannelHandler;
 use zenoh::pubsub::Publisher;
 use zenoh::pubsub::Subscriber;
@@ -216,6 +213,8 @@ impl AttributeServerBuilder {
         (cmd_receiver, att_publisher)
     }
 
+    // ------------------------------------------------------------------------
+
     /// BOOLEAN
     ///
     pub async fn start_as_boolean(mut self) -> Result<BooleanAttributeServer, Error> {
@@ -231,6 +230,8 @@ impl AttributeServerBuilder {
         Ok(att)
     }
 
+    // ------------------------------------------------------------------------
+
     /// NUMBER
     ///
     pub async fn start_as_number(mut self) -> Result<NumberAttributeServer, Error> {
@@ -245,6 +246,25 @@ impl AttributeServerBuilder {
         .await;
         Ok(att)
     }
+
+    // ------------------------------------------------------------------------
+
+    /// STRING
+    ///
+    pub async fn start_as_string(mut self) -> Result<StringAttributeServer, Error> {
+        self.r#type = Some("string".to_string());
+        self.send_creation_notification().await;
+        let att = StringAttributeServer::new(
+            self.engine.session,
+            self.topic.unwrap(),
+            self.task_monitor_sender,
+            self.notification_channel,
+        )
+        .await;
+        Ok(att)
+    }
+
+    // ------------------------------------------------------------------------
 
     /// ENUM
     ///
@@ -388,91 +408,6 @@ impl AttributeServerBuilder {
         self.r#type = Some(JsonAttributeServer::r#type());
         let (cmd_receiver, att_publisher) = self.common_ops(50).await;
         let att = JsonAttributeServer::new(
-            self.engine.session.clone(),
-            topic.clone(),
-            cmd_receiver,
-            self.task_monitor_sender.clone(),
-            self.notification_channel.clone(),
-        )
-        .await;
-        Ok(att)
-    }
-
-    // ///
-    // ///
-    // pub async fn start_as_si<N: Into<String>>(
-    //     mut self,
-    //     unit: N,
-    //     min: f64,
-    //     max: f64,
-    //     decimals: usize,
-    // ) -> Result<SiAttributeServer, Error> {
-    //     let topic = self.topic.as_ref().unwrap();
-    //     self.r#type = Some(SiAttributeServer::r#type());
-
-    //     let unit = unit.into();
-    //     self.settings = Some(json!({
-    //         "unit": unit.clone(),
-    //         "min": min,
-    //         "max": max,
-    //         "decimals": decimals,
-    //     }));
-
-    //     let (cmd_receiver, att_publisher) = self.common_ops(50).await;
-    //     let att = SiAttributeServer::new(
-    //         self.engine.session.clone(),
-    //         topic.clone(),
-    //         cmd_receiver,
-    //         unit.clone(),
-    //         min,
-    //         max,
-    //         decimals,
-    //         self.task_monitor_sender.clone(),
-    //     )
-    //     .await;
-    //     Ok(att)
-    // }
-
-    ///
-    ///
-    pub async fn start_as_string(mut self) -> Result<StringAttributeServer, Error> {
-        // //
-        // //
-        // self.r#type = Some(StringAttributeServer::r#type());
-
-        // //
-        // //
-        // self.send_creation_notification().await;
-
-        // let topic = self.topic.unwrap();
-
-        // let cmd_receiver = self
-        //     .engine
-        //     .register_listener(format!("{}/cmd", topic), 50)
-        //     .await;
-
-        // let att_publisher = self
-        //     .engine
-        //     .register_publisher(format!("{}/att", topic))
-        //     .await
-        //     .unwrap();
-
-        // //
-        // //
-        // let att = StringAttributeServer::new(
-        //     self.engine.session.clone(),
-        //     topic,
-        //     cmd_receiver,
-        //     self.task_monitor_sender,
-        // )
-        // .await;
-
-        // Ok(att)
-
-        let topic: &String = self.topic.as_ref().unwrap();
-        self.r#type = Some(StringAttributeServer::r#type());
-        let (cmd_receiver, att_publisher) = self.common_ops(50).await;
-        let att = StringAttributeServer::new(
             self.engine.session.clone(),
             topic.clone(),
             cmd_receiver,
