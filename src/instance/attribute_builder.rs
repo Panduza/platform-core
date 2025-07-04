@@ -160,8 +160,6 @@ impl AttributeServerBuilder {
     ) -> (Subscriber<FifoChannelHandler<Sample>>, Publisher) {
         let topic = self.topic.as_ref().unwrap();
 
-        println!("topic de base : {}", topic);
-
         let topic_prefixless = if let Some(namespace) = self.engine.namespace.as_ref() {
             // topic.strip_prefix(namespace).unwrap_or(topic)
             // format!(
@@ -194,8 +192,6 @@ impl AttributeServerBuilder {
         // if let Some(namespace) = self.engine.namespace.as_ref() {
         //     topic_prefixless = topic_prefixless.strip_prefix("*");
         // }
-        println!("topic publisher: {}", topic);
-        println!("topic subscriber: {}", topic_prefixless);
 
         let cmd_receiver = self
             .engine
