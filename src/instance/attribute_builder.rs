@@ -3,7 +3,6 @@ use super::server::bytes::BytesAttributeServer;
 use super::server::json::JsonAttributeServer;
 use super::server::notification_v0::NotificationAttributeServer;
 use super::server::number::NumberAttributeServer;
-use super::server::r#enum::EnumAttributeServer;
 use super::server::sample::SampleAttributeServer;
 use super::server::status_v0::StatusAttributeServer;
 use super::server::string::StringAttributeServer;
@@ -16,7 +15,6 @@ use crate::Engine;
 use crate::Error;
 use crate::Notification;
 use panduza::task_monitor::NamedTaskHandle;
-use serde_json::json;
 use tokio::sync::mpsc::Sender;
 use zenoh::handlers::FifoChannelHandler;
 use zenoh::pubsub::Publisher;
@@ -266,30 +264,22 @@ impl AttributeServerBuilder {
 
     // ------------------------------------------------------------------------
 
-    /// ENUM
+    /// BYTES
     ///
-    pub async fn start_as_enum<S: Into<String>>(
-        mut self,
-        choices: Vec<S>,
-    ) -> Result<EnumAttributeServer, Error> {
-        let topic = self.topic.as_ref().unwrap();
-        self.r#type = Some(EnumAttributeServer::r#type());
-
-        let choices: Vec<String> = choices.into_iter().map(Into::into).collect();
-        self.settings = Some(json!({
-            "choices": choices.clone(),
-        }));
-
-        let (cmd_receiver, att_publisher) = self.common_ops(50).await;
-        let att = EnumAttributeServer::new(
-            self.engine.session.clone(),
-            topic.clone(),
-            cmd_receiver,
-            self.task_monitor_sender.clone(),
-            choices.clone(),
-        );
+    pub async fn start_as_bytes(mut self) -> Result<BytesAttributeServer, Error> {
+        self.r#type = Some("bytes".to_string());
+        self.send_creation_notification().await;
+        let att = BytesAttributeServer::new(
+            self.engine.session,
+            self.topic.unwrap(),
+            self.task_monitor_sender,
+            self.notification_channel,
+        )
+        .await;
         Ok(att)
     }
+
+    // ------------------------------------------------------------------------
 
     /// NOTIFICATION
     ///
@@ -408,56 +398,6 @@ impl AttributeServerBuilder {
         self.r#type = Some(JsonAttributeServer::r#type());
         let (cmd_receiver, att_publisher) = self.common_ops(50).await;
         let att = JsonAttributeServer::new(
-            self.engine.session.clone(),
-            topic.clone(),
-            cmd_receiver,
-            self.task_monitor_sender.clone(),
-            self.notification_channel.clone(),
-        )
-        .await;
-        Ok(att)
-    }
-
-    /// BYTES
-    ///
-    pub async fn start_as_bytes(mut self) -> Result<BytesAttributeServer, Error> {
-        // //
-        // //
-        // self.r#type = Some(BytesAttributeServer::r#type());
-
-        // //
-        // //
-        // self.send_creation_notification().await;
-
-        // let topic = self.topic.unwrap();
-
-        // let cmd_receiver = self
-        //     .engine
-        //     .register_listener(format!("{}/cmd", topic), 50)
-        //     .await;
-
-        // let att_publisher = self
-        //     .engine
-        //     .register_publisher(format!("{}/att", topic))
-        //     .await
-        //     .unwrap();
-
-        // //
-        // //
-        // let att = BytesAttributeServer::new(
-        //     self.engine.session.clone(),
-        //     topic,
-        //     cmd_receiver,
-        //     self.task_monitor_sender.clone(),
-        // )
-        // .await;
-
-        // Ok(att)
-
-        let topic: &String = self.topic.as_ref().unwrap();
-        self.r#type = Some(BytesAttributeServer::r#type());
-        let (cmd_receiver, att_publisher) = self.common_ops(50).await;
-        let att = BytesAttributeServer::new(
             self.engine.session.clone(),
             topic.clone(),
             cmd_receiver,
