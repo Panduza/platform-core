@@ -3,7 +3,6 @@ use super::server::bytes::BytesAttributeServer;
 use super::server::json::JsonAttributeServer;
 use super::server::notification_v0::NotificationAttributeServer;
 use super::server::number::NumberAttributeServer;
-use super::server::sample::SampleAttributeServer;
 use super::server::status_v0::StatusAttributeServer;
 use super::server::string::StringAttributeServer;
 use super::server::trigger_v0::TriggerAttributeServer;
@@ -336,22 +335,6 @@ impl AttributeServerBuilder {
             cmd_receiver,
             self.task_monitor_sender.clone(),
         );
-        Ok(att)
-    }
-
-    /// SAMPLE
-    ///
-    pub async fn start_as_sample(mut self) -> Result<SampleAttributeServer, Error> {
-        let topic = self.topic.as_ref().unwrap();
-        self.r#type = Some(SampleAttributeServer::r#type());
-        let (cmd_receiver, att_publisher) = self.common_ops(50).await;
-        let att = SampleAttributeServer::new(
-            self.engine.session.clone(),
-            topic.clone(),
-            cmd_receiver,
-            self.task_monitor_sender.clone(),
-        )
-        .await;
         Ok(att)
     }
 

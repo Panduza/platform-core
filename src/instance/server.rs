@@ -5,7 +5,6 @@ pub mod generic;
 pub mod json;
 pub mod notification_v0;
 pub mod number;
-pub mod sample;
 pub mod si;
 pub mod status_v0;
 pub mod string;
