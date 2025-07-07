@@ -72,10 +72,6 @@ pub struct NotificationAttributeServer {
     ///
     ///
     update_notifier: Arc<Notify>,
-
-    /// query value
-    ///
-    current_value: Arc<Mutex<NotificationBuffer>>,
 }
 
 impl NotificationAttributeServer {
@@ -102,13 +98,12 @@ impl NotificationAttributeServer {
         //
         //
         let pack = Arc::new(Mutex::new(NotificationDataPack::default()));
-        let query_value = Arc::new(Mutex::new(NotificationBuffer::default()));
 
         // create a queryable to get value at initialization
         //
         let topic_clone = topic.clone();
         let session_clone = session.clone();
-        let query_value_clone = query_value.clone();
+
         let handle = tokio::spawn(async move {
             let queryable = session_clone
                 .declare_queryable(format!("{}/att", topic_clone.clone()))
@@ -116,7 +111,14 @@ impl NotificationAttributeServer {
                 .unwrap();
 
             while let Ok(query) = queryable.recv_async().await {
-                let value = query_value_clone.lock().unwrap().clone(); // Clone the value
+                let value = NotificationBuffer::new()
+                    .with_notification_type(NotificationType::Alert)
+                    .with_notification_source("default_source".to_string())
+                    .with_notification_message("".to_string())
+                    .with_source(0)
+                    .with_random_sequence()
+                    .build()
+                    .unwrap();
                 let pyl = value.to_zbytes();
                 query
                     .reply(format!("{}/att", topic_clone.clone()), pyl)
@@ -127,11 +129,10 @@ impl NotificationAttributeServer {
         });
 
         task_monitor_sender
-            .send((format!("SERVER/STATUS >> {}", &topic), handle))
+            .send((format!("SERVER/NOTIFICATION >> {}", &topic), handle))
             .await
             .unwrap();
-        //
-        //
+
         let n = pack.lock().unwrap().update_notifier();
         Self {
             logger: Logger::new_for_attribute_from_topic(topic.clone()),
@@ -139,7 +140,7 @@ impl NotificationAttributeServer {
             topic: topic,
             cmd_receiver: cmd_receiver,
             update_notifier: n,
-            current_value: query_value,
+            // current_value: query_value,
         }
     }
 
@@ -152,14 +153,12 @@ impl NotificationAttributeServer {
         message: String,
     ) -> Result<(), Error> {
         let buffer = NotificationBuffer::new()
-            .with_type(r#type)
-            .with_source(source)
-            .with_message(message)
+            .with_notification_type(r#type)
+            .with_notification_source(source)
+            .with_notification_message(message)
             .with_random_sequence()
             .build()
             .map_err(|e| Error::Generic(e))?;
-        // update the current queriable value
-        *self.current_value.lock().unwrap() = buffer.clone();
 
         // Send the command
         self.session
