@@ -1,13 +1,13 @@
 use crate::Error;
 use crate::Logger;
 use bytes::Bytes;
-use panduza::fbs::notification_v0::NotificationBuffer;
-use panduza::fbs::notification_v0::NotificationType;
+use panduza::fbs::NotificationBuffer;
+use panduza::fbs::NotificationType;
 // use panduza::pubsub::Publisher;
 use panduza::task_monitor::NamedTaskHandle;
+use panduza::PanduzaBuffer;
 use std::sync::Arc;
 use std::sync::Mutex;
-use tokio::sync::mpsc::Receiver;
 use tokio::sync::mpsc::Sender;
 use tokio::sync::Notify;
 use zenoh::handlers::FifoChannelHandler;
@@ -117,7 +117,7 @@ impl NotificationAttributeServer {
 
             while let Ok(query) = queryable.recv_async().await {
                 let value = query_value_clone.lock().unwrap().clone(); // Clone the value
-                let pyl = value.take_data();
+                let pyl = value.to_zbytes();
                 query
                     .reply(format!("{}/att", topic_clone.clone()), pyl)
                     .await
@@ -151,13 +151,19 @@ impl NotificationAttributeServer {
         source: String,
         message: String,
     ) -> Result<(), Error> {
-        let buffer = NotificationBuffer::from_args(r#type, source, message);
+        let buffer = NotificationBuffer::new()
+            .with_type(r#type)
+            .with_source(source)
+            .with_message(message)
+            .with_random_sequence()
+            .build()
+            .map_err(|e| Error::Generic(e))?;
         // update the current queriable value
         *self.current_value.lock().unwrap() = buffer.clone();
 
         // Send the command
         self.session
-            .put(format!("{}/att", self.topic.clone()), buffer.take_data())
+            .put(format!("{}/att", self.topic.clone()), buffer.to_zbytes())
             .await
             .unwrap();
         Ok(())
@@ -168,7 +174,7 @@ impl NotificationAttributeServer {
     pub async fn set_buffer(&self, buffer: NotificationBuffer) -> Result<(), Error> {
         // Send the command
         self.session
-            .put(format!("{}/att", self.topic.clone()), buffer.take_data())
+            .put(format!("{}/att", self.topic.clone()), buffer.to_zbytes())
             .await
             .unwrap();
         Ok(())
@@ -178,7 +184,8 @@ impl NotificationAttributeServer {
     ///
     pub async fn wait_for_commands(&self) -> Result<NotificationBuffer, Error> {
         let received = self.cmd_receiver.recv_async().await.unwrap();
-        let value: Bytes = Bytes::copy_from_slice(&received.payload().to_bytes());
-        Ok(NotificationBuffer::from_raw_data(value))
+        Ok(NotificationBuffer::build_from_zbytes(
+            received.payload().clone(),
+        ))
     }
 }

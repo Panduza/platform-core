@@ -41,8 +41,8 @@ pub use error::Error;
 pub mod tracing;
 pub use tracing::Logger; // only this one must stay at the end (others deprecated)
 
-pub use panduza::fbs::notification_v0::NotificationBuffer;
-pub use panduza::fbs::notification_v0::NotificationType;
+pub use panduza::fbs::NotificationBuffer;
+pub use panduza::fbs::NotificationType;
 pub use panduza::InstanceState;
 
 /// Client public export
