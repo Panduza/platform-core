@@ -1,6 +1,7 @@
 use crate::Error;
 use crate::Logger;
 use panduza::fbs::InstanceStatusBuffer;
+use panduza::fbs::PzaBuffer;
 use panduza::fbs::StatusBuffer;
 use panduza::task_monitor::NamedTaskHandle;
 use panduza::PanduzaBuffer;
@@ -187,6 +188,6 @@ impl StatusAttributeServer {
     ///
     pub async fn wait_for_commands(&self) -> Result<StatusBuffer, Error> {
         let received = self.cmd_receiver.recv_async().await.unwrap();
-        Ok(StatusBuffer::build_from_zbytes(received.payload().clone()))
+        Ok(StatusBuffer::from_zbytes(received.payload().clone()))
     }
 }
