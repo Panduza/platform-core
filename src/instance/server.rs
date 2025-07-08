@@ -5,8 +5,11 @@ pub mod generic;
 pub mod json;
 pub mod notification_v0;
 pub mod number;
-pub mod status_v0;
+pub mod status;
 pub mod string;
+
+/// The attribute manages a RO stream of data
+pub mod ro_stream;
 
 use panduza::attribute::CallbackId;
 
