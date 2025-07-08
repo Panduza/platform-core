@@ -1,10 +1,11 @@
 use crate::Error;
 use crate::Logger;
+use panduza::fbs::status_buffer::StatusBufferBuilder;
 use panduza::fbs::InstanceStatusBuffer;
 use panduza::fbs::PzaBuffer;
+use panduza::fbs::PzaBufferBuilder;
 use panduza::fbs::StatusBuffer;
 use panduza::task_monitor::NamedTaskHandle;
-use panduza::PanduzaBuffer;
 use std::sync::Arc;
 use std::sync::Mutex;
 use tokio::sync::mpsc::Sender;
@@ -103,7 +104,7 @@ impl StatusAttributeServer {
         let pack = Arc::new(Mutex::new(StatusDataPack::default()));
 
         // Default initial value
-        let initial_value = StatusBuffer::new()
+        let initial_value = StatusBufferBuilder::default()
             .with_instance_status_list(vec![])
             .with_random_sequence()
             .build()
@@ -153,7 +154,7 @@ impl StatusAttributeServer {
     /// Set the value of the attribute
     ///
     pub async fn set(&self, all_status: Vec<InstanceStatusBuffer>) -> Result<(), Error> {
-        let buffer = StatusBuffer::new()
+        let buffer = StatusBufferBuilder::default()
             .with_instance_status_list(all_status)
             .with_random_sequence()
             .build()
