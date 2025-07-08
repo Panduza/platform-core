@@ -1,10 +1,9 @@
 use crate::Error;
 use crate::Logger;
-use bytes::Bytes;
-use panduza::fbs::status_v0::InstanceStatusBuffer;
-use panduza::fbs::status_v0::StatusBuffer;
-// use panduza::pubsub::Publisher;
+use panduza::fbs::InstanceStatusBuffer;
+use panduza::fbs::StatusBuffer;
 use panduza::task_monitor::NamedTaskHandle;
+use panduza::PanduzaBuffer;
 use std::sync::Arc;
 use std::sync::Mutex;
 use tokio::sync::mpsc::Sender;
@@ -56,13 +55,13 @@ pub struct StatusAttributeServer {
     ///
     logger: Logger,
 
-    ///
-    ///
-    session: Session,
-
     /// topic
     ///
     topic: String,
+
+    ///
+    ///
+    session: Session,
 
     ///
     ///
@@ -72,7 +71,7 @@ pub struct StatusAttributeServer {
     ///
     update_notifier: Arc<Notify>,
 
-    /// query value
+    ///
     ///
     current_value: Arc<Mutex<StatusBuffer>>,
 }
@@ -95,19 +94,28 @@ impl StatusAttributeServer {
     pub async fn new(
         session: Session,
         topic: String,
-        mut cmd_receiver: Subscriber<FifoChannelHandler<Sample>>,
+        cmd_receiver: Subscriber<FifoChannelHandler<Sample>>,
         task_monitor_sender: Sender<NamedTaskHandle>,
     ) -> Self {
         //
         //
         let pack = Arc::new(Mutex::new(StatusDataPack::default()));
-        let query_value = Arc::new(Mutex::new(StatusBuffer::default()));
+
+        // Default initial value
+        let initial_value = StatusBuffer::new()
+            .with_instance_status_list(vec![])
+            .with_random_sequence()
+            .build()
+            .unwrap();
+
+        let current_value = Arc::new(Mutex::new(initial_value.clone()));
 
         // create a queryable to get value at initialization
         //
         let topic_clone = topic.clone();
         let session_clone = session.clone();
-        let query_value_clone = query_value.clone();
+        let current_value_clone = current_value.clone();
+
         let handle = tokio::spawn(async move {
             let queryable = session_clone
                 .declare_queryable(format!("{}/att", topic_clone.clone()))
@@ -115,8 +123,8 @@ impl StatusAttributeServer {
                 .unwrap();
 
             while let Ok(query) = queryable.recv_async().await {
-                let value = query_value_clone.lock().unwrap().clone(); // Clone the value
-                let pyl = value.take_data();
+                let current_val = current_value_clone.lock().unwrap().clone();
+                let pyl = current_val.to_zbytes();
                 query
                     .reply(format!("{}/att", topic_clone.clone()), pyl)
                     .await
@@ -129,8 +137,7 @@ impl StatusAttributeServer {
             .send((format!("SERVER/STATUS >> {}", &topic), handle))
             .await
             .unwrap();
-        //
-        //
+
         let n = pack.lock().unwrap().update_notifier();
         Self {
             logger: Logger::new_for_attribute_from_topic(topic.clone()),
@@ -138,22 +145,39 @@ impl StatusAttributeServer {
             topic: topic,
             cmd_receiver: cmd_receiver,
             update_notifier: n,
-            current_value: query_value,
+            current_value: current_value,
         }
     }
 
     /// Set the value of the attribute
     ///
     pub async fn set(&self, all_status: Vec<InstanceStatusBuffer>) -> Result<(), Error> {
-        // Wrap value into payload
-        let pyl = StatusBuffer::from_args(all_status);
+        let buffer = StatusBuffer::new()
+            .with_instance_status_list(all_status)
+            .with_random_sequence()
+            .build()
+            .map_err(|e| Error::Generic(e))?;
 
         // update the current queriable value
-        *self.current_value.lock().unwrap() = pyl.clone();
+        *self.current_value.lock().unwrap() = buffer.clone();
 
         // Send the command
         self.session
-            .put(format!("{}/att", self.topic.clone()), pyl.take_data())
+            .put(format!("{}/att", self.topic.clone()), buffer.to_zbytes())
+            .await
+            .unwrap();
+        Ok(())
+    }
+
+    /// Set the buffer
+    ///
+    pub async fn set_buffer(&self, buffer: StatusBuffer) -> Result<(), Error> {
+        // update the current queriable value
+        *self.current_value.lock().unwrap() = buffer.clone();
+
+        // Send the command
+        self.session
+            .put(format!("{}/att", self.topic.clone()), buffer.to_zbytes())
             .await
             .unwrap();
         Ok(())
@@ -163,8 +187,6 @@ impl StatusAttributeServer {
     ///
     pub async fn wait_for_commands(&self) -> Result<StatusBuffer, Error> {
         let received = self.cmd_receiver.recv_async().await.unwrap();
-        let value: StatusBuffer =
-            StatusBuffer::from_raw_data(Bytes::copy_from_slice(&received.payload().to_bytes()));
-        Ok(value)
+        Ok(StatusBuffer::build_from_zbytes(received.payload().clone()))
     }
 }
