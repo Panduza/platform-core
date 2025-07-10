@@ -191,7 +191,6 @@ impl Instance {
                 InstanceState::Running => {} // do nothing, watch for inner tasks
                 InstanceState::Error => {
                     self.task_monitor.cancel_all_monitored_tasks().await;
-                    println!("il y a {:?} tasks", self.task_monitor.task_count().await);
                     //
                     // Wait before reboot
                     self.actions

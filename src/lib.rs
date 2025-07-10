@@ -44,6 +44,7 @@ pub use tracing::Logger; // only this one must stay at the end (others deprecate
 // Client public export
 pub use panduza::fbs::InstanceStatusBuffer;
 pub use panduza::fbs::NotificationBuffer;
+pub use panduza::fbs::NotificationBufferBuilder;
 pub use panduza::fbs::NotificationType;
 pub use panduza::InstanceState;
 pub use panduza::TaskMonitor;

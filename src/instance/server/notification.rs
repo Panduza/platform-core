@@ -1,4 +1,5 @@
 use crate::instance::server::ro_stream::RoStreamAttributeServer;
+use crate::Error;
 // use crate::Error;
 use crate::Logger;
 use crate::Notification;
@@ -6,6 +7,7 @@ use crate::Notification;
 // use panduza::fbs::NotificationType;
 // use panduza::task_monitor::NamedTaskHandle;
 // use panduza::PanduzaBuffer;
+use panduza::fbs::NotificationBuffer;
 use std::sync::Arc;
 // use std::sync::Mutex;
 use tokio::sync::mpsc::Sender;
@@ -41,5 +43,9 @@ impl NotificationAttributeServer {
         Self {
             inner: Arc::new(inner),
         }
+    }
+
+    pub async fn push(&self, notification: NotificationBuffer) -> Result<(), Error> {
+        self.inner.push(notification).await
     }
 }

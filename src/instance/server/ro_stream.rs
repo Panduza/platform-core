@@ -54,7 +54,7 @@ impl RoStreamAttributeServer {
 
     ///
     ///
-    pub async fn set<B: PzaBuffer>(&self, buffer: B) -> Result<(), Error> {
+    pub async fn push<B: PzaBuffer>(&self, buffer: B) -> Result<(), Error> {
         // Send the command
         self.session
             .put(&self.att_topic, buffer.to_zbytes())
