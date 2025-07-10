@@ -7,52 +7,30 @@ use bytes::Bytes;
 use panduza::task_monitor::NamedTaskHandle;
 
 use serde_json::Value as JsonValue;
-use std::collections::HashMap;
+
 use std::sync::Arc;
 use std::sync::Mutex;
-use tokio::sync::mpsc::Receiver;
 use tokio::sync::mpsc::Sender;
-use tokio::sync::Notify;
-use zenoh::handlers::FifoChannel;
+// use tokio::sync::Notify;
 use zenoh::handlers::FifoChannelHandler;
 use zenoh::pubsub::Subscriber;
 use zenoh::sample::Sample;
 use zenoh::Session;
 
-#[derive(Default, Debug)]
-struct JsonDataPack {
-    /// Queue of value (need to be poped)
-    ///
-    queue: Vec<JsonValue>,
+// #[derive(Default, Debug)]
+// struct JsonDataPack {
+//     ///
+//     ///
+//     update_notifier: Arc<Notify>,
+// }
 
-    ///
-    ///
-    update_notifier: Arc<Notify>,
-}
-
-impl JsonDataPack {
-    ///
-    ///
-    pub fn push(&mut self, v: JsonValue) {
-        self.queue.push(v);
-        self.update_notifier.notify_waiters();
-    }
-
-    ///
-    ///
-    pub fn pop(&mut self) -> Option<JsonValue> {
-        if self.queue.is_empty() {
-            return None;
-        }
-        Some(self.queue.remove(0))
-    }
-
-    ///
-    ///
-    pub fn update_notifier(&self) -> Arc<Notify> {
-        self.update_notifier.clone()
-    }
-}
+// impl JsonDataPack {
+//     ///
+//     ///
+//     pub fn update_notifier(&self) -> Arc<Notify> {
+//         self.update_notifier.clone()
+//     }
+// }
 
 ///
 ///
@@ -71,7 +49,7 @@ pub struct JsonAttributeServer {
 
     ///
     ///
-    update_notifier: Arc<Notify>,
+    // update_notifier: Arc<Notify>,
 
     /// topic
     ///
@@ -104,13 +82,13 @@ impl JsonAttributeServer {
     pub async fn new(
         session: Session,
         topic: String,
-        mut cmd_receiver: Subscriber<FifoChannelHandler<Sample>>,
+        cmd_receiver: Subscriber<FifoChannelHandler<Sample>>,
         task_monitor_sender: Sender<NamedTaskHandle>,
         notification_channel: Sender<Notification>,
     ) -> Self {
         //
         //
-        let pack = Arc::new(Mutex::new(JsonDataPack::default()));
+        // let pack = Arc::new(Mutex::new(JsonDataPack::default()));
         let query_value = Arc::new(Mutex::new(JsonValue::Null));
 
         // create a queryable to get value at initialization
@@ -141,12 +119,12 @@ impl JsonAttributeServer {
 
         //
         //
-        let n = pack.lock().unwrap().update_notifier();
+        // let n = pack.lock().unwrap().update_notifier();
         Self {
             logger: Logger::new_for_attribute_from_topic(topic.clone()),
             session: session,
             cmd_receiver: cmd_receiver,
-            update_notifier: n,
+            // update_notifier: n,
             topic: topic,
             current_value: query_value,
             notification_channel: notification_channel,

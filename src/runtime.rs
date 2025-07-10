@@ -9,9 +9,9 @@ use std::sync::{
     atomic::{AtomicBool, Ordering},
     Arc,
 };
+use tokio::sync::mpsc::channel;
 use tokio::sync::mpsc::Receiver;
 use tokio::sync::mpsc::Sender;
-use tokio::sync::{mpsc::channel, Notify};
 
 ///
 ///
@@ -41,7 +41,7 @@ pub struct Runtime {
     keep_alive: Arc<AtomicBool>,
     ///
     /// Flag to know alert the platform, it must stop
-    must_stop: Arc<AtomicBool>,
+    // must_stop: Arc<AtomicBool>,
 
     /// Sender, allow a sub function to request a register a production order
     production_order_receiver: Option<Receiver<ProductionOrder>>,
@@ -141,7 +141,7 @@ impl Runtime {
             factory: factory,
             engine: engine,
             keep_alive: Arc::new(AtomicBool::new(true)),
-            must_stop: Arc::new(AtomicBool::new(false)),
+            // must_stop: Arc::new(AtomicBool::new(false)),
             production_order_receiver: Some(po_receiver),
             notifications: notifications,
             notification_channel: notification_channel,

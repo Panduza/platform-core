@@ -5,7 +5,7 @@ use super::server::notification::NotificationAttributeServer;
 use super::server::number::NumberAttributeServer;
 use super::server::status::StatusAttributeServer;
 use super::server::string::StringAttributeServer;
-use crate::instance::class::Class;
+// use crate::instance::class::Class;
 use crate::runtime::notification::attribute::AttributeMode;
 use crate::AttributeNotification;
 use crate::Engine;
@@ -29,7 +29,7 @@ pub struct AttributeServerBuilder {
 
     /// Parent class if any
     ///
-    parent_class: Option<Class>,
+    // parent_class: Option<Class>,
 
     /// Topic of the attribute
     pub topic: Option<String>,
@@ -58,13 +58,13 @@ impl AttributeServerBuilder {
     ///
     pub fn new(
         engine: Engine,
-        parent_class: Option<Class>,
+        // parent_class: Option<Class>,
         notification_channel: Sender<Notification>,
         task_monitor_sender: Sender<NamedTaskHandle>,
     ) -> Self {
         Self {
             engine,
-            parent_class,
+            // parent_class,
             topic: None,
             settings: None,
             mode: Some(AttributeMode::ReadOnly),
@@ -153,7 +153,7 @@ impl AttributeServerBuilder {
     ///
     async fn common_ops(
         &self,
-        cmd_channel_size: usize,
+        _cmd_channel_size: usize,
     ) -> (Subscriber<FifoChannelHandler<Sample>>, Publisher) {
         let topic = self.topic.as_ref().unwrap();
 
@@ -307,41 +307,9 @@ impl AttributeServerBuilder {
     ///
     ///
     pub async fn start_as_json(mut self) -> Result<JsonAttributeServer, Error> {
-        // //
-        // //
-        // self.r#type = Some(JsonAttributeServer::r#type());
-
-        // //
-        // //
-        // self.send_creation_notification().await;
-
-        // let topic = self.topic.unwrap();
-
-        // let cmd_receiver = self
-        //     .engine
-        //     .register_listener(format!("{}/cmd", topic), 50)
-        //     .await;
-
-        // let att_publisher = self
-        //     .engine
-        //     .register_publisher(format!("{}/att", topic))
-        //     .await
-        //     .unwrap();
-
-        // //
-        // //
-        // let att = JsonAttributeServer::new(
-        //     self.engine.session.clone(),
-        //     topic,
-        //     cmd_receiver,
-        //     self.task_monitor_sender,
-        // );
-
-        // Ok(att)
-
         let topic: &String = self.topic.as_ref().unwrap();
         self.r#type = Some(JsonAttributeServer::r#type());
-        let (cmd_receiver, att_publisher) = self.common_ops(50).await;
+        let (cmd_receiver, _att_publisher) = self.common_ops(50).await;
         let att = JsonAttributeServer::new(
             self.engine.session.clone(),
             topic.clone(),

@@ -287,7 +287,7 @@ impl Container for Instance {
     fn create_attribute<N: Into<String>>(&mut self, name: N) -> AttributeServerBuilder {
         AttributeServerBuilder::new(
             self.engine.clone(),
-            None,
+            // None,
             self.notification_channel.clone(),
             self.task_monitor_sender().clone(),
         )

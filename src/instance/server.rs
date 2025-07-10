@@ -1,6 +1,5 @@
 pub mod boolean;
 pub mod bytes;
-pub mod r#enum;
 pub mod generic;
 pub mod json;
 pub mod notification;
