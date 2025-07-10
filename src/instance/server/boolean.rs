@@ -1,4 +1,4 @@
-use crate::instance::server::GenericAttributeServer;
+use crate::instance::server::StdObjAttributeServer;
 use crate::Error;
 use crate::Logger;
 use crate::Notification;
@@ -14,7 +14,7 @@ use zenoh::Session;
 ///
 ///
 pub struct BooleanAttributeServer {
-    pub inner: Arc<GenericAttributeServer<BooleanBuffer>>,
+    pub inner: Arc<StdObjAttributeServer<BooleanBuffer>>,
 }
 
 impl BooleanAttributeServer {
@@ -32,13 +32,9 @@ impl BooleanAttributeServer {
         task_monitor_sender: Sender<NamedTaskHandle>,
         notification_channel: Sender<Notification>,
     ) -> Self {
-        let inner = GenericAttributeServer::<BooleanBuffer>::new(
-            session,
-            topic,
-            task_monitor_sender,
-            notification_channel,
-        )
-        .await;
+        let inner =
+            StdObjAttributeServer::new(session, topic, task_monitor_sender, notification_channel)
+                .await;
 
         Self {
             inner: Arc::new(inner),
@@ -51,11 +47,12 @@ impl BooleanAttributeServer {
     where
         V: Into<bool>,
     {
-        let buffer = BooleanBuffer::from(value.into())
+        let buffer = BooleanBuffer::builder()
+            .with_value(value.into())
             .with_source(0)
             .with_random_sequence()
             .build()
-            .unwrap();
+            .expect("Failed to build BooleanBuffer");
         self.inner.set(buffer).await
     }
 

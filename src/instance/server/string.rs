@@ -1,4 +1,4 @@
-use crate::instance::server::GenericAttributeServer;
+use crate::instance::server::StdObjAttributeServer;
 use crate::Error;
 use crate::Logger;
 use crate::Notification;
@@ -15,7 +15,7 @@ use zenoh::Session;
 /// StringAttributeServer provides a server for string attributes
 ///
 pub struct StringAttributeServer {
-    pub inner: Arc<GenericAttributeServer<StringBuffer>>,
+    pub inner: Arc<StdObjAttributeServer<StringBuffer>>,
 }
 
 impl StringAttributeServer {
@@ -34,13 +34,9 @@ impl StringAttributeServer {
         task_monitor_sender: Sender<NamedTaskHandle>,
         notification_channel: Sender<Notification>,
     ) -> Self {
-        let inner = GenericAttributeServer::<StringBuffer>::new(
-            session,
-            topic,
-            task_monitor_sender,
-            notification_channel,
-        )
-        .await;
+        let inner =
+            StdObjAttributeServer::new(session, topic, task_monitor_sender, notification_channel)
+                .await;
 
         Self {
             inner: Arc::new(inner),

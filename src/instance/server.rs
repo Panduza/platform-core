@@ -10,10 +10,12 @@ pub mod string;
 /// The standard object attribute server
 ///
 pub mod std_obj;
+pub use std_obj::StdObjAttributeServer;
 
 /// The attribute manages a RO stream of data
 ///
 pub mod ro_stream;
+pub use ro_stream::RoStreamAttributeServer;
 
 use panduza::attribute::CallbackId;
 
