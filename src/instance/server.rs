@@ -8,7 +8,12 @@ pub mod number;
 pub mod status;
 pub mod string;
 
+/// The standard object attribute server
+///
+pub mod std_obj;
+
 /// The attribute manages a RO stream of data
+///
 pub mod ro_stream;
 
 use panduza::attribute::CallbackId;

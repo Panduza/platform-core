@@ -298,6 +298,7 @@ impl AttributeServerBuilder {
         let att = StatusAttributeServer::new(
             self.engine.session,
             self.topic.unwrap(),
+            self.task_monitor_sender,
             self.notification_channel,
         )
         .await;
