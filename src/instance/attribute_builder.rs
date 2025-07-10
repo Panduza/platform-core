@@ -1,7 +1,7 @@
 use super::server::boolean::BooleanAttributeServer;
 use super::server::bytes::BytesAttributeServer;
 use super::server::json::JsonAttributeServer;
-use super::server::notification_v0::NotificationAttributeServer;
+use super::server::notification::NotificationAttributeServer;
 use super::server::number::NumberAttributeServer;
 use super::server::status::StatusAttributeServer;
 use super::server::string::StringAttributeServer;
@@ -277,14 +277,13 @@ impl AttributeServerBuilder {
     /// NOTIFICATION
     ///
     pub async fn __start_as_notification(mut self) -> Result<NotificationAttributeServer, Error> {
-        let topic = self.topic.as_ref().unwrap();
-        self.r#type = Some(NotificationAttributeServer::r#type());
-        let (cmd_receiver, att_publisher) = self.common_ops(50).await;
+        self.r#type = Some("status".to_string());
+        self.send_creation_notification().await;
         let att = NotificationAttributeServer::new(
-            self.engine.session.clone(),
-            topic.clone(),
-            cmd_receiver,
-            self.task_monitor_sender.clone(),
+            self.engine.session,
+            self.topic.unwrap(),
+            // self.task_monitor_sender,
+            self.notification_channel,
         )
         .await;
         Ok(att)

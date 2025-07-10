@@ -3,7 +3,7 @@ pub mod bytes;
 pub mod r#enum;
 pub mod generic;
 pub mod json;
-pub mod notification_v0;
+pub mod notification;
 pub mod number;
 pub mod status;
 pub mod string;
