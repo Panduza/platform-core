@@ -6,7 +6,7 @@ use crate::Notification;
 // use panduza::fbs::NotificationBuffer;
 // use panduza::fbs::NotificationType;
 // use panduza::task_monitor::NamedTaskHandle;
-// use panduza::PanduzaBuffer;
+// use panduza::PzaBuffer;
 use panduza::fbs::NotificationBuffer;
 use std::sync::Arc;
 // use std::sync::Mutex;

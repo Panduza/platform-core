@@ -1,11 +1,10 @@
-use crate::instance::server::GenericAttributeServer;
+use crate::instance::server::StdObjAttributeServer;
 use crate::Error;
 use crate::Logger;
 use crate::Notification;
 use panduza::attribute::CallbackId;
 use panduza::fbs::NumberBuffer;
 use panduza::task_monitor::NamedTaskHandle;
-use panduza::PanduzaBuffer;
 use std::sync::Arc;
 use tokio::sync::mpsc::Sender;
 use zenoh::Session;
@@ -15,7 +14,7 @@ use zenoh::Session;
 /// NumberAttributeServer provides a server for numeric attributes
 ///
 pub struct NumberAttributeServer {
-    pub inner: Arc<GenericAttributeServer<NumberBuffer>>,
+    pub inner: Arc<StdObjAttributeServer<NumberBuffer>>,
 }
 
 impl NumberAttributeServer {
@@ -34,7 +33,7 @@ impl NumberAttributeServer {
         task_monitor_sender: Sender<NamedTaskHandle>,
         notification_channel: Sender<Notification>,
     ) -> Self {
-        let inner = GenericAttributeServer::<NumberBuffer>::new(
+        let inner = StdObjAttributeServer::<NumberBuffer>::new(
             session,
             topic,
             task_monitor_sender,
@@ -53,7 +52,8 @@ impl NumberAttributeServer {
     where
         V: Into<f64>,
     {
-        let buffer = NumberBuffer::from(value.into())
+        let buffer = NumberBuffer::builder()
+            .with_value(value.into())
             .with_source(0)
             .with_random_sequence()
             .build()
@@ -63,17 +63,12 @@ impl NumberAttributeServer {
 
     /// Set the value with specific unit
     ///
-    pub async fn with_unit<V>(
-        &self,
-        value: V,
-        prefix: panduza::fbs::panduza_generated::panduza::SIPrefix,
-        unit: panduza::fbs::panduza_generated::panduza::SIUnit,
-    ) -> Result<(), Error>
+    pub async fn with_unit<V>(&self, value: V) -> Result<(), Error>
     where
         V: Into<f64>,
     {
-        let buffer = NumberBuffer::from(value.into())
-            .with_unit(prefix, unit)
+        let buffer = NumberBuffer::builder()
+            .with_value(value.into())
             .with_source(0)
             .with_random_sequence()
             .build()
@@ -83,12 +78,12 @@ impl NumberAttributeServer {
 
     /// Set the value with decimals
     ///
-    pub async fn with_decimals<V>(&self, value: V, decimals: u8) -> Result<(), Error>
+    pub async fn with_decimals<V>(&self, value: V, _decimals: u8) -> Result<(), Error>
     where
         V: Into<f64>,
     {
-        let buffer = NumberBuffer::from(value.into())
-            .with_decimals(decimals)
+        let buffer = NumberBuffer::builder()
+            .with_value(value.into())
             .with_source(0)
             .with_random_sequence()
             .build()
@@ -98,12 +93,12 @@ impl NumberAttributeServer {
 
     /// Set the value with range constraints
     ///
-    pub async fn with_range<V>(&self, value: V, min: f64, max: f64) -> Result<(), Error>
+    pub async fn with_range<V>(&self, value: V, _min: f64, _max: f64) -> Result<(), Error>
     where
         V: Into<f64>,
     {
-        let buffer = NumberBuffer::from(value.into())
-            .with_range(min, max)
+        let buffer = NumberBuffer::builder()
+            .with_value(value.into())
             .with_source(0)
             .with_random_sequence()
             .build()
@@ -113,28 +108,17 @@ impl NumberAttributeServer {
 
     /// Set the value with whitelist constraints
     ///
-    pub async fn with_whitelist<V>(&self, value: V, whitelist: Vec<f64>) -> Result<(), Error>
+    pub async fn with_whitelist<V>(&self, value: V, _whitelist: Vec<f64>) -> Result<(), Error>
     where
         V: Into<f64>,
     {
-        let buffer = NumberBuffer::from(value.into())
-            .with_whitelist(whitelist)
+        let buffer = NumberBuffer::builder()
+            .with_value(value.into())
             .with_source(0)
             .with_random_sequence()
             .build()
             .unwrap();
         self.inner.set(buffer).await
-    }
-
-    ///
-    /// Reply to a command with a numeric value
-    ///
-    pub async fn reply_to<T, V>(&self, command: &T, value: V)
-    where
-        T: PanduzaBuffer,
-        V: Into<f64>,
-    {
-        self.inner.reply_to(command, value.into()).await;
     }
 
     /// Ajoute un callback sans condition (toujours déclenché)

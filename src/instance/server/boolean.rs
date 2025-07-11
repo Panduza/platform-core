@@ -5,7 +5,6 @@ use crate::Notification;
 use panduza::attribute::CallbackId;
 use panduza::fbs::BooleanBuffer;
 use panduza::task_monitor::NamedTaskHandle;
-use panduza::PanduzaBuffer;
 use std::sync::Arc;
 use tokio::sync::mpsc::Sender;
 use zenoh::Session;
@@ -54,16 +53,6 @@ impl BooleanAttributeServer {
             .build()
             .expect("Failed to build BooleanBuffer");
         self.inner.set(buffer).await
-    }
-
-    ///
-    ///
-    pub async fn reply_to<T, V>(&self, command: &T, value: V)
-    where
-        T: PanduzaBuffer,
-        V: Into<bool>,
-    {
-        self.inner.reply_to(command, value.into()).await;
     }
 
     /// Ajoute un callback sans condition (toujours déclenché)

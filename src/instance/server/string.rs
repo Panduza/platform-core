@@ -5,7 +5,6 @@ use crate::Notification;
 use panduza::attribute::CallbackId;
 use panduza::fbs::StringBuffer;
 use panduza::task_monitor::NamedTaskHandle;
-use panduza::PanduzaBuffer;
 use std::sync::Arc;
 use tokio::sync::mpsc::Sender;
 use zenoh::Session;
@@ -49,23 +48,13 @@ impl StringAttributeServer {
     where
         S: Into<String>,
     {
-        let buffer = StringBuffer::from(value.into())
+        let buffer = StringBuffer::builder()
+            .with_value(value.into())
             .with_source(0)
             .with_random_sequence()
             .build()
             .unwrap();
         self.inner.set(buffer).await
-    }
-
-    ///
-    /// Reply to a command with a string value
-    ///
-    pub async fn reply_to<T, S>(&self, command: &T, value: S)
-    where
-        T: PanduzaBuffer,
-        S: Into<String>,
-    {
-        self.inner.reply_to(command, value.into()).await;
     }
 
     /// Ajoute un callback sans condition (toujours déclenché)

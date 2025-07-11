@@ -6,7 +6,7 @@ use panduza::fbs::PzaBuffer;
 use tokio::sync::mpsc::Sender;
 use zenoh::Session;
 
-/// Generic attribute implementation that can work with any buffer type that implements PanduzaBuffer
+/// Generic attribute implementation that can work with any buffer type that implements PzaBuffer
 // #[derive(Clone)]
 pub struct RoStreamAttributeServer {
     /// Local logger

@@ -1,4 +1,4 @@
-use crate::instance::server::GenericAttributeServer;
+use crate::instance::server::StdObjAttributeServer;
 use crate::Error;
 use crate::Logger;
 use crate::Notification;
@@ -6,7 +6,6 @@ use bytes::Bytes;
 use panduza::attribute::CallbackId;
 use panduza::fbs::BytesBuffer;
 use panduza::task_monitor::NamedTaskHandle;
-use panduza::PanduzaBuffer;
 use std::sync::Arc;
 use tokio::sync::mpsc::Sender;
 use zenoh::Session;
@@ -16,7 +15,7 @@ use zenoh::Session;
 /// BytesAttributeServer provides a server for bytes attributes
 ///
 pub struct BytesAttributeServer {
-    pub inner: Arc<GenericAttributeServer<BytesBuffer>>,
+    pub inner: Arc<StdObjAttributeServer<BytesBuffer>>,
 }
 
 impl BytesAttributeServer {
@@ -35,7 +34,7 @@ impl BytesAttributeServer {
         task_monitor_sender: Sender<NamedTaskHandle>,
         notification_channel: Sender<Notification>,
     ) -> Self {
-        let inner = GenericAttributeServer::<BytesBuffer>::new(
+        let inner = StdObjAttributeServer::<BytesBuffer>::new(
             session,
             topic,
             task_monitor_sender,
@@ -51,22 +50,13 @@ impl BytesAttributeServer {
     /// Set the value of the attribute
     ///
     pub async fn set(&self, value: Bytes) -> Result<(), Error> {
-        let buffer = BytesBuffer::from(value)
+        let buffer = BytesBuffer::builder()
+            .with_value(value)
             .with_source(0)
             .with_random_sequence()
             .build()
             .unwrap();
         self.inner.set(buffer).await
-    }
-
-    ///
-    /// Reply to a command with a bytes value
-    ///
-    pub async fn reply_to<T>(&self, command: &T, value: Bytes)
-    where
-        T: PanduzaBuffer,
-    {
-        self.inner.reply_to(command, value).await;
     }
 
     /// Ajoute un callback sans condition (toujours déclenché)
