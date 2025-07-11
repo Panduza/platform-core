@@ -48,8 +48,23 @@ impl BooleanAttributeServer {
     {
         let buffer = BooleanBuffer::builder()
             .with_value(value.into())
-            .with_source(0)
+            .with_source(0) // 0 == platform
             .with_random_sequence()
+            .build()
+            .expect("Failed to build BooleanBuffer");
+        self.inner.set(buffer).await
+    }
+
+    /// Set the value of the attribute
+    ///
+    pub async fn respond<V>(&self, value: V, inmsg: &BooleanBuffer) -> Result<(), Error>
+    where
+        V: Into<bool>,
+    {
+        let buffer = BooleanBuffer::builder()
+            .with_value(value.into())
+            .with_source(0) // 0 == platform
+            .as_answer_to(inmsg)
             .build()
             .expect("Failed to build BooleanBuffer");
         self.inner.set(buffer).await
