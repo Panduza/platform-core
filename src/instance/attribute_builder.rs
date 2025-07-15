@@ -5,6 +5,7 @@ use super::server::notification::NotificationAttributeServer;
 use super::server::number::NumberAttributeServer;
 use super::server::status::StatusAttributeServer;
 use super::server::string::StringAttributeServer;
+use crate::instance::server::structure::StructureAttributeServer;
 // use crate::instance::class::Class;
 use crate::runtime::notification::attribute::AttributeMode;
 use crate::AttributeNotification;
@@ -295,6 +296,21 @@ impl AttributeServerBuilder {
         self.r#type = Some("status".to_string());
         self.send_creation_notification().await;
         let att = StatusAttributeServer::new(
+            self.engine.session,
+            self.topic.unwrap(),
+            self.task_monitor_sender,
+            self.notification_channel,
+        )
+        .await;
+        Ok(att)
+    }
+
+    /// STRUCTURE
+    ///
+    pub async fn __start_as_structure(mut self) -> Result<StructureAttributeServer, Error> {
+        self.r#type = Some("structure".to_string());
+        self.send_creation_notification().await;
+        let att = StructureAttributeServer::new(
             self.engine.session,
             self.topic.unwrap(),
             self.task_monitor_sender,

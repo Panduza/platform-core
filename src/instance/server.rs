@@ -5,6 +5,7 @@ pub mod notification;
 pub mod number;
 pub mod status;
 pub mod string;
+pub mod structure;
 
 /// The standard object attribute server
 ///
