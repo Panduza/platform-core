@@ -65,18 +65,7 @@ impl StructureAttributeServer {
 
     ///
     ///
-    pub async fn set(
-        &self,
-        attributes: Vec<AttributeEntryBuilder>,
-        classes: Vec<ClassEntryBuilder>,
-    ) -> Result<(), Error> {
-        let buffer = StructureBuffer::builder()
-            .with_attributes(attributes)
-            .with_classes(classes)
-            .with_source(0)
-            .with_random_sequence()
-            .build()
-            .expect("Failed to build StructureBuffer");
+    pub async fn set(&self, buffer: StructureBuffer) -> Result<(), Error> {
         self.inner.set(buffer).await
     }
 
