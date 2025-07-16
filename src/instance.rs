@@ -121,6 +121,16 @@ impl Instance {
         instance
     }
 
+    // ------------------------------------------------------------------------
+
+    /// Logger for the instance
+    ///
+    pub fn logger(&self) -> &Logger {
+        &self.logger
+    }
+
+    // ------------------------------------------------------------------------
+
     ///
     ///
     pub fn task_monitor_sender(&self) -> Sender<NamedTaskHandle> {

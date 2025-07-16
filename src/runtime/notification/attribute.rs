@@ -16,8 +16,8 @@ pub enum AttributeMode {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AttributeNotification {
     name: String,
-    typee: String,
-    mode: AttributeMode,
+    pub typee: String,
+    pub mode: AttributeMode,
     info: Option<String>,
     settings: Option<JsonValue>,
 }
@@ -53,12 +53,17 @@ impl AttributeNotification {
     pub fn name(&self) -> &String {
         &self.name
     }
-    ///
-    pub fn typee(&self) -> &String {
-        &self.typee
-    }
+
     pub fn mode(&self) -> &AttributeMode {
         &self.mode
+    }
+
+    pub fn mode_into_string(&self) -> String {
+        match &self.mode {
+            AttributeMode::ReadOnly => "RO".to_string(),
+            AttributeMode::WriteOnly => "WO".to_string(),
+            AttributeMode::ReadWrite => "RW".to_string(),
+        }
     }
 
     pub fn info(&self) -> &Option<String> {

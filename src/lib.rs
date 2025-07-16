@@ -42,6 +42,8 @@ pub mod tracing;
 pub use tracing::Logger; // only this one must stay at the end (others deprecated)
 
 // Client public export
+pub use panduza::fbs::AttributeEntryBuffer;
+pub use panduza::fbs::AttributeEntryBufferBuilder;
 pub use panduza::fbs::InstanceStatusBuffer;
 pub use panduza::fbs::NotificationBuffer;
 pub use panduza::fbs::NotificationBufferBuilder;
