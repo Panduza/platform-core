@@ -46,6 +46,9 @@ pub use panduza::fbs::InstanceStatusBuffer;
 pub use panduza::fbs::NotificationBuffer;
 pub use panduza::fbs::NotificationBufferBuilder;
 pub use panduza::fbs::NotificationType;
+pub use panduza::fbs::StructureBuffer;
+pub use panduza::fbs::StructureBufferBuilder;
+pub use panduza::topic::Topic;
 pub use panduza::InstanceState;
 pub use panduza::TaskMonitor;
 
@@ -92,11 +95,6 @@ pub use runtime::notification::Notification;
 pub use runtime::notification::StateNotification;
 pub use runtime::Runtime;
 pub use runtime::RuntimeBuilder;
-
-///
-///
-pub mod topic;
-pub use topic::Topic;
 
 ///
 ///

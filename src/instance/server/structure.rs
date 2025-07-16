@@ -2,8 +2,6 @@ use crate::instance::server::std_obj::StdObjAttributeServer;
 use crate::Error;
 use crate::Logger;
 use crate::Notification;
-use panduza::fbs::AttributeEntryBuilder;
-use panduza::fbs::ClassEntryBuilder;
 use panduza::fbs::PzaBufferBuilder;
 use panduza::fbs::StructureBuffer;
 use panduza::task_monitor::NamedTaskHandle;
