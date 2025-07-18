@@ -50,8 +50,11 @@ pub use panduza::fbs::NotificationBufferBuilder;
 pub use panduza::fbs::NotificationType;
 pub use panduza::fbs::PzaBuffer;
 pub use panduza::fbs::PzaBufferBuilder;
+pub use panduza::fbs::StatusBuffer;
+pub use panduza::fbs::StatusBufferBuilder;
 pub use panduza::fbs::StructureBuffer;
 pub use panduza::fbs::StructureBufferBuilder;
+
 pub use panduza::topic::Topic;
 pub use panduza::InstanceState;
 pub use panduza::TaskMonitor;
