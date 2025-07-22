@@ -1,4 +1,5 @@
 use super::{CallbackEntry, CallbackId};
+use crate::log_debug;
 use crate::AlertNotification;
 use crate::Error;
 use crate::Logger;
@@ -54,6 +55,9 @@ impl<B: PzaBuffer> StdObjAttributeServer<B> {
         task_monitor_sender: Sender<NamedTaskHandle>,
         notification_channel: Sender<Notification>,
     ) -> Self {
+        // Initialize the logger
+        let logger = Logger::new_for_attribute_from_topic(topic.clone());
+
         // Initialize async callbacks storage
         let callbacks = Arc::new(Mutex::new(HashMap::<CallbackId, CallbackEntry<B>>::new()));
 
@@ -66,6 +70,7 @@ impl<B: PzaBuffer> StdObjAttributeServer<B> {
 
         //
         let handle_query_processing = tokio::spawn(task_query_processing::<B>(
+            logger.clone(),
             session.clone(),
             att_topic.clone(),
             query_value.clone(),
@@ -92,9 +97,9 @@ impl<B: PzaBuffer> StdObjAttributeServer<B> {
 
         //
         Self {
-            logger: Logger::new_for_attribute_from_topic(topic.clone()),
-            session: session,
-            callbacks: callbacks,
+            logger,
+            session,
+            callbacks,
             next_callback_id: Arc::new(Mutex::new(0)),
             att_topic: att_topic,
             topic: topic,
@@ -243,6 +248,7 @@ pub async fn task_command_processing<B: PzaBuffer + Send + Sync + 'static>(
 /// Task query processing function that listens for queries and replies with the current value
 ///
 pub async fn task_query_processing<B: PzaBuffer + Send + Sync + 'static>(
+    logger: Logger,
     session: zenoh::Session,
     att_topic: String,
     query_value: std::sync::Arc<tokio::sync::Mutex<B>>,
@@ -251,8 +257,24 @@ pub async fn task_query_processing<B: PzaBuffer + Send + Sync + 'static>(
         .declare_queryable(&att_topic)
         .await
         .map_err(|e| e.to_string())?;
+    // log_debug!(
+    //     logger,
+    //     "[StdObjAttributeServer] Queryable declared for topic: {}",
+    //     &att_topic
+    // );
     while let Ok(query) = queryable.recv_async().await {
+        // log_debug!(
+        //     logger,
+        //     "[StdObjAttributeServer] Received query for topic: {}",
+        //     &att_topic
+        // );
         let p = query_value.lock().await.clone().to_zbytes();
+        // log_debug!(
+        //     logger,
+        //     "[StdObjAttributeServer] Replying to query on topic: {} with {} bytes",
+        //     &att_topic,
+        //     p.len()
+        // );
         query
             .reply(&att_topic, p)
             .await
