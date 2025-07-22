@@ -2,9 +2,6 @@ use crate::instance::server::std_obj::StdObjAttributeServer;
 use crate::Error;
 use crate::Logger;
 use crate::Notification;
-use panduza::fbs::status_buffer::StatusBufferBuilder;
-use panduza::fbs::InstanceStatusBuffer;
-use panduza::fbs::PzaBufferBuilder;
 use panduza::fbs::StatusBuffer;
 use panduza::task_monitor::NamedTaskHandle;
 use std::sync::Arc;
@@ -46,13 +43,7 @@ impl StatusAttributeServer {
 
     ///
     ///
-    pub async fn set(&self, values: Vec<InstanceStatusBuffer>) -> Result<(), Error> {
-        let buffer = StatusBufferBuilder::default()
-            .with_instance_status_list(values)
-            .with_source(0)
-            .with_random_sequence()
-            .build()
-            .expect("Failed to build StatusBuffer");
+    pub async fn set(&self, buffer: StatusBuffer) -> Result<(), Error> {
         self.inner.set(buffer).await
     }
 }

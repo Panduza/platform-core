@@ -54,10 +54,9 @@ pub use panduza::fbs::StatusBuffer;
 pub use panduza::fbs::StatusBufferBuilder;
 pub use panduza::fbs::StructureBuffer;
 pub use panduza::fbs::StructureBufferBuilder;
-
-pub use panduza::topic::Topic;
 pub use panduza::InstanceState;
 pub use panduza::TaskMonitor;
+pub use panduza::Topic;
 
 /// The engine is the core object that will handle the connections and the events
 ///
