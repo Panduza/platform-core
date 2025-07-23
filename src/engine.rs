@@ -62,7 +62,7 @@ impl Engine {
     pub async fn register_listener<A: Into<String> + 'static>(
         &self,
         topic: A,
-        channel_size: usize,
+        _channel_size: usize,
     ) -> Subscriber<FifoChannelHandler<Sample>> {
         let topic_str: String = topic.into();
         // let topic_prefixless = topic_str.strip_prefix("Zenoh/").unwrap_or(&topic_str);
@@ -163,7 +163,6 @@ impl EngineBuilder {
     /// It will be used in plugin sync context
     ///
     pub fn new(options: EngineOptions) -> Self {
-
         Self {
             // options: options,
             options: options,
@@ -176,6 +175,5 @@ impl EngineBuilder {
         //
         // Finalize the engine
         Engine::new(session, namespace)
-
     }
 }

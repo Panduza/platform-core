@@ -86,7 +86,7 @@ macro_rules! plugin_interface {
 
             //
             //
-            let engine_options = EngineOptions::new("127.0.0.1", 7447, "minica.pem");
+            let engine_options = EngineOptions::new("127.0.0.1", 7447, "minica.pem", None);
             let engine_builder = EngineBuilder::new(engine_options);
 
             //

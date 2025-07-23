@@ -121,6 +121,16 @@ impl Instance {
         instance
     }
 
+    // ------------------------------------------------------------------------
+
+    /// Logger for the instance
+    ///
+    pub fn logger(&self) -> &Logger {
+        &self.logger
+    }
+
+    // ------------------------------------------------------------------------
+
     ///
     ///
     pub fn task_monitor_sender(&self) -> Sender<NamedTaskHandle> {
@@ -191,7 +201,6 @@ impl Instance {
                 InstanceState::Running => {} // do nothing, watch for inner tasks
                 InstanceState::Error => {
                     self.task_monitor.cancel_all_monitored_tasks().await;
-                    println!("il y a {:?} tasks", self.task_monitor.task_count().await);
                     //
                     // Wait before reboot
                     self.actions
@@ -288,7 +297,7 @@ impl Container for Instance {
     fn create_attribute<N: Into<String>>(&mut self, name: N) -> AttributeServerBuilder {
         AttributeServerBuilder::new(
             self.engine.clone(),
-            None,
+            // None,
             self.notification_channel.clone(),
             self.task_monitor_sender().clone(),
         )
