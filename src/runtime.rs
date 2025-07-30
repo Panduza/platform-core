@@ -9,17 +9,17 @@ use std::sync::{
     atomic::{AtomicBool, Ordering},
     Arc,
 };
+use tokio::sync::mpsc::channel;
 use tokio::sync::mpsc::Receiver;
 use tokio::sync::mpsc::Sender;
-use tokio::sync::{mpsc::channel, Notify};
 
 ///
 ///
-static PROD_ORDER_CHANNEL_SIZE: usize = 64;
+static PROD_ORDER_CHANNEL_SIZE: usize = 128;
 
 ///
 ///
-static NOTIFICATION_CHANNEL_SIZE: usize = 512;
+static NOTIFICATION_CHANNEL_SIZE: usize = 1024;
 
 /// Manage the execution instances
 ///
@@ -41,7 +41,7 @@ pub struct Runtime {
     keep_alive: Arc<AtomicBool>,
     ///
     /// Flag to know alert the platform, it must stop
-    must_stop: Arc<AtomicBool>,
+    // must_stop: Arc<AtomicBool>,
 
     /// Sender, allow a sub function to request a register a production order
     production_order_receiver: Option<Receiver<ProductionOrder>>,
@@ -141,7 +141,7 @@ impl Runtime {
             factory: factory,
             engine: engine,
             keep_alive: Arc::new(AtomicBool::new(true)),
-            must_stop: Arc::new(AtomicBool::new(false)),
+            // must_stop: Arc::new(AtomicBool::new(false)),
             production_order_receiver: Some(po_receiver),
             notifications: notifications,
             notification_channel: notification_channel,
@@ -205,7 +205,12 @@ impl Runtime {
                     // production_order.device_settings = json!({});
                     let mut instance =
                         self.factory
-                            .produce(self.engine.clone(),  production_order.unwrap(), self.notification_channel.0.clone());
+                            .produce(
+                                self.engine.clone(),
+                                production_order.unwrap(),
+                                self.notification_channel.0.clone(),
+                                self.engine.namespace.clone(),
+                            );
                     //
                     let task_handle = tokio::spawn(async move {
                         loop {
@@ -224,7 +229,7 @@ impl Runtime {
                 },
                 notif = self.notification_channel.1.recv() => {
                     log_trace!(self.logger,  "NOTIF [{:?}]", notif );
-                    self.notifications.lock().unwrap().push(notif.unwrap());
+                    self.notifications.lock().unwrap().push(notif.unwrap()); //serait la source du problème
                 },
 
             }
@@ -286,8 +291,8 @@ impl RuntimeBuilder {
         self.notification_channel.0.clone()
     }
 
-    pub fn start(self) -> Runtime {
-        let rr = self.engine_builder.build();
+    pub async fn start(self) -> Runtime {
+        let rr = self.engine_builder.build().await;
 
         Runtime::new(
             self.factory,

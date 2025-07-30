@@ -84,6 +84,7 @@ impl Instance {
         actions: Box<dyn Actions>,
         settings: Option<InstanceSettings>,
         notification_channel: Sender<Notification>,
+        namespace: Option<String>,
     ) -> Instance {
         //
         // Create a task monitor for the instance
@@ -95,7 +96,8 @@ impl Instance {
         let instance = Instance {
             logger: Logger::new_for_instance(name.clone()),
             engine: engine.clone(),
-            topic: format!("{}/{}", engine.root_topic(), name),
+            topic: format!("{}/{}", engine.root_topic(namespace), name),
+            // topic: format!("{}/{}", "pza", name),
             settings,
             actions: Arc::new(Mutex::new(actions)),
             state: Arc::new(Mutex::new(InstanceState::Booting)),
@@ -118,6 +120,16 @@ impl Instance {
 
         instance
     }
+
+    // ------------------------------------------------------------------------
+
+    /// Logger for the instance
+    ///
+    pub fn logger(&self) -> &Logger {
+        &self.logger
+    }
+
+    // ------------------------------------------------------------------------
 
     ///
     ///
@@ -223,6 +235,7 @@ impl Instance {
     }
 
     pub async fn go_error(&mut self) {
+        // println!("GO ERROR");
         self.move_to_state(InstanceState::Error).await;
     }
 
@@ -284,7 +297,7 @@ impl Container for Instance {
     fn create_attribute<N: Into<String>>(&mut self, name: N) -> AttributeServerBuilder {
         AttributeServerBuilder::new(
             self.engine.clone(),
-            None,
+            // None,
             self.notification_channel.clone(),
             self.task_monitor_sender().clone(),
         )

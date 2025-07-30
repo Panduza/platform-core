@@ -41,16 +41,22 @@ pub use error::Error;
 pub mod tracing;
 pub use tracing::Logger; // only this one must stay at the end (others deprecated)
 
-pub use panduza::fbs::notification_v0::NotificationBuffer;
-pub use panduza::fbs::notification_v0::NotificationType;
+// Client public export
+pub use panduza::fbs::AttributeEntryBuffer;
+pub use panduza::fbs::AttributeEntryBufferBuilder;
+pub use panduza::fbs::InstanceStatusBuffer;
+pub use panduza::fbs::NotificationBuffer;
+pub use panduza::fbs::NotificationBufferBuilder;
+pub use panduza::fbs::NotificationType;
+pub use panduza::fbs::PzaBuffer;
+pub use panduza::fbs::PzaBufferBuilder;
+pub use panduza::fbs::StatusBuffer;
+pub use panduza::fbs::StatusBufferBuilder;
+pub use panduza::fbs::StructureBuffer;
+pub use panduza::fbs::StructureBufferBuilder;
 pub use panduza::InstanceState;
-
-/// Client public export
-///
-pub use panduza::fbs::number::NumberBuffer;
-pub use panduza::fbs::status_v0::InstanceStatusBuffer;
-pub use panduza::fbs::status_v0::StatusBuffer;
 pub use panduza::TaskMonitor;
+pub use panduza::Topic;
 
 /// The engine is the core object that will handle the connections and the events
 ///
@@ -98,11 +104,6 @@ pub use runtime::RuntimeBuilder;
 
 ///
 ///
-pub mod topic;
-pub use topic::Topic;
-
-///
-///
 pub mod env;
 
 /// Built-in Protocols & Interfaces to help coding plugins
@@ -145,6 +146,6 @@ pub use props::Prop;
 pub use props::PropType;
 pub use props::Props;
 
-///
-///
-pub mod template;
+// ///
+// ///
+// pub mod template;
