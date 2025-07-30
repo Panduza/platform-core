@@ -1,15 +1,15 @@
 [package]
 name = "panduza-platform-core"
 edition = "2021"
-version = "0.3.1"
+version = "0.4.0"
 readme = "README.md"
 
 # =========================================================
 [dependencies]
 
 # Panduza Rust Client
-# panduza = { git = "https://github.com/Panduza/panduza-rust", tag = "0.0.1"}
-panduza = { git = "https://github.com/Panduza/panduza-rust", branch = "zenoh-implementation" }
+panduza = { git = "https://github.com/Panduza/panduza-rust", tag = "0.0.2"}
+# panduza = { git = "https://github.com/Panduza/panduza-rust", branch = "main" }
 # panduza = { path = "../panduza-rust" }
 # Main async framework for the platform
 tokio = { version = "1.43.0", features = ["full", "tracing"] }
