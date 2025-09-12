@@ -55,7 +55,7 @@ The `EngineBuilder` provides a non-async way to prepare Engine configuration bef
 - Defers the actual async connection establishment until explicitly requested
 
 **Methods:**
-- `new(options: panudza::Config) -> Self`
+- `new(options: panduza::Config) -> Self`
   - Creates a new builder instance with the specified options
   - Synchronous operation suitable for plugin initialization
 
@@ -80,4 +80,4 @@ The `EngineBuilder` provides a non-async way to prepare Engine configuration bef
 
 - **Zenoh**: Core communication protocol for pub/sub messaging
 - **Tokio**: Async runtime for handling concurrent operations
-- **panudza::Config**: Client config in module panduza to use panudza::connection::create_client_connection
+- **panduza::Config**: Client config in module panduza to use panduza::connection::create_client_connection

@@ -61,7 +61,6 @@ pub use panduza::Topic;
 /// The engine is the core object that will handle the connections and the events
 ///
 mod engine;
-pub use engine::new_engine;
 pub use engine::options::EngineOptions;
 pub use engine::Engine;
 pub use engine::EngineBuilder;

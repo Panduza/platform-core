@@ -1,176 +1,127 @@
 pub mod options;
-use options::EngineOptions;
 
-use zenoh::pubsub::Publisher;
-use zenoh::pubsub::Subscriber;
+use zenoh::handlers::FifoChannelHandler;
+use zenoh::pubsub::{Publisher, Subscriber};
 use zenoh::sample::Sample;
-use zenoh::{handlers::FifoChannelHandler, Session};
+use zenoh::Session;
 
-/// The engine is the core object that will handle the connections and the events
+// Temporary stub function until panduza::connection is fully implemented
+async fn new_connection(_options: panduza::pubsub::Options) -> Result<Session, zenoh::Error> {
+    // For now, create a basic zenoh session
+    // TODO: Replace with proper panduza::connection::create_client_connection implementation
+    // TODO: Use the provided options to configure the session (ip, port, certificates, etc.)
+    zenoh::open(zenoh::Config::default()).await
+}
+
+/// Error type for engine operations
+#[derive(Debug, thiserror::Error)]
+pub enum Error {
+    #[error("Zenoh session error: {0}")]
+    Session(#[from] zenoh::Error),
+    #[error("Publisher registration failed: {0}")]
+    Publisher(String),
+    #[error("Listener registration failed: {0}")]
+    Listener(String),
+}
+
+/// The Engine struct is the main entity that manages the platform's communication infrastructure.
 ///
-/// All the attribute and objects will be powered by the engine
+/// The Engine module is the core component of the Panduza platform that handles connections,
+/// events, and communication through the Zenoh protocol. It serves as the foundational layer
+/// that powers all attributes and objects within the system.
 ///
+/// Characteristics:
+/// - Implements Clone trait for easy duplication across different contexts
+/// - Serves as the central hub for all pub/sub operations
 #[derive(Clone)]
 pub struct Engine {
-    /// Engine works on router objects
-    ///
+    /// A Zenoh session that handles the underlying communication protocol
     pub session: Session,
 
-    /// Namespace of the engine
-    ///
+    /// An optional namespace that provides logical separation for different engine instances
     pub namespace: Option<String>,
 }
 
 impl Engine {
-    /// Create a new Reactor
+    /// Creates a new Engine instance with the provided Zenoh session and optional namespace
+    /// Initializes the core communication infrastructure
     ///
     /// # Arguments
     ///
-    /// * `core` - The core of the reactor
+    /// * `session` - A Zenoh session that handles the underlying communication protocol
+    /// * `namespace` - An optional namespace that provides logical separation for different engine instances
     ///
     pub fn new(session: Session, namespace: Option<String>) -> Self {
-        // let data = ;
+        Self { session, namespace }
+    }
 
-        // Server hostname
-        // let hostname = hostname::get().unwrap().to_string_lossy().to_string();
-
-        Self {
-            session: session,
-            namespace: namespace,
+    /// Generates the root topic path for the engine
+    /// Combines the provided namespace (or engine's namespace) with the "pza" suffix
+    /// Returns a properly formatted topic string for Zenoh communication
+    /// Handles empty namespaces gracefully by omitting the namespace prefix
+    pub fn root_topic(&self, namespace: Option<String>) -> String {
+        let ns = namespace.or_else(|| self.namespace.clone());
+        match ns {
+            Some(namespace) if !namespace.is_empty() => format!("{}/pza", namespace),
+            _ => "pza".to_string(),
         }
     }
 
-    ///
-    ///
-    pub fn root_topic(&self, namespace: Option<String>) -> String {
-        println!("namespace: {:?}", namespace);
-        format!(
-            "{}pza",
-            namespace.map_or("".to_string(), |ns| if ns.is_empty() {
-                "".to_string()
-            } else {
-                format!("{}/", ns)
-            })
-        )
-    }
-
-    /// Register
-    ///
+    /// Registers a subscriber for listening to messages on a specific topic
+    /// Returns a Zenoh subscriber with FIFO channel handling
+    /// Provides asynchronous message reception capabilities
     pub async fn register_listener<A: Into<String> + 'static>(
         &self,
         topic: A,
         _channel_size: usize,
     ) -> Subscriber<FifoChannelHandler<Sample>> {
-        let topic_str: String = topic.into();
-        // let topic_prefixless = topic_str.strip_prefix("Zenoh/").unwrap_or(&topic_str);
-
-        // println!("topic_prefixless: {}", topic_prefixless);
-        println!("topic: {}", topic_str.clone());
-
-        self.session.declare_subscriber(topic_str).await.unwrap()
+        self.session.declare_subscriber(topic.into()).await.unwrap()
     }
 
-    ///
-    ///
+    /// Registers a publisher for sending messages to a specific topic
+    /// Returns a Zenoh publisher wrapped in a Result for error handling
+    /// Enables asynchronous message publishing capabilities
     pub async fn register_publisher<A: Into<String> + 'static>(
         &self,
         topic: A,
-    ) -> Result<Publisher, pubsub::Error> {
-        Ok(self.session.declare_publisher(topic.into()).await.unwrap())
+    ) -> Result<Publisher, Error> {
+        self.session
+            .declare_publisher(topic.into())
+            .await
+            .map_err(|e| Error::Publisher(format!("Failed to register publisher: {}", e)))
     }
-
-    // pub fn start(
-    //     &mut self,
-    //     mut main_task_sender: TaskSender<TaskResult>,
-    // ) -> Result<(), crate::Error> {
-    //     if self.is_started {
-    //         return Ok(());
-    //     }
-
-    //     let mut mqttoptions = MqttOptions::new(
-    //         format!("rumqtt-sync-{}", Self::generate_random_string(5)),
-    //         "localhost",
-    //         1883,
-    //     );
-    //     mqttoptions.set_keep_alive(Duration::from_secs(3));
-
-    //     let (client, event_loop) = AsyncClient::new(mqttoptions, 100);
-
-    //     self.message_client = Some(client.clone());
-
-    //     self.scan_handler = Some(Arc::new(Mutex::new(PzaScanMessageHandler {
-    //         message_client: client.clone(),
-    //     })));
-
-    //     let h = self.scan_handler.as_ref().unwrap().clone();
-    //     let dispatcher = self.message_dispatcher.clone();
-    //     let mut message_engine = MessageEngine::new(self.message_dispatcher.clone(), event_loop);
-    //     main_task_sender.spawn_with_name(
-    //         "REACTOR CORE",
-    //         async move {
-    //             dispatcher
-    //                 .lock()
-    //                 .await
-    //                 .register_message_attribute("pza".to_string(), h);
-    //             client.subscribe("pza", QoS::AtLeastOnce).await.unwrap();
-    //             message_engine.run().await;
-    //             println!("!!!!!!!!!!!! ReactorCore STOP not runiing !!!!!!!!!!!!!!!!!!!!!!");
-    //             Ok(())
-    //         }
-    //         .boxed(),
-    //     )?;
-
-    //     self.is_started = true;
-    //     Ok(())
-    // }
 }
 
-/// Create and Start the engine
+/// The EngineBuilder provides a non-async way to prepare Engine configuration
+/// before entering a Tokio runtime context.
 ///
-pub async fn new_engine(options: EngineOptions) -> Result<Engine, String> {
-    //
-    // Create MQTT router
-    // let router = panduza::router::new_router(options.pubsub_options).map_err(|e| e.to_string())?;
-
-    let session = new_connection(options.pubsub_options.clone())
-        .await
-        .map_err(|e| e.to_string())?;
-
-    //
-    // Start the router and keep the operation handler
-    // let router_handler = router.start(None).unwrap();
-
-    //
-    // Finalize the engine
-    Ok(Engine::new(session, options.pubsub_options.namespace))
-}
-
-/// The goal of this object is to provide a tmp object that
-/// does not use tokio:spawn, to be able to prepare the context.
-/// Before starting a tokio context.
-///
+/// Purpose:
+/// - Allows synchronous preparation of engine configuration
+/// - Enables use in plugin contexts where async operations are not immediately available
+/// - Defers the actual async connection establishment until explicitly requested
 pub struct EngineBuilder {
-    options: EngineOptions,
+    options: panduza::pubsub::Options,
 }
 
 impl EngineBuilder {
-    /// Create and Start the engine
-    ///
-    /// This function MUST absolutely not be async !
-    /// It will be used in plugin sync context
-    ///
-    pub fn new(options: EngineOptions) -> Self {
-        Self {
-            // options: options,
-            options: options,
-        }
+    /// Creates a new builder instance with the specified options
+    /// Synchronous operation suitable for plugin initialization
+    pub fn new(options: panduza::pubsub::Options) -> Self {
+        Self { options }
     }
 
-    pub async fn build(self) -> Engine {
-        let namespace = self.options.pubsub_options.namespace.clone();
-        let session = new_connection(self.options.pubsub_options).await.unwrap();
-        //
-        // Finalize the engine
-        Engine::new(session, namespace)
+    /// Consumes the builder and creates the actual Engine instance
+    /// Establishes the Zenoh connection and finalizes the engine setup
+    /// Must be called within an async context
+    pub async fn build(self) -> Result<Engine, Error> {
+        // Create Zenoh session using the options
+        let session = new_connection(self.options.clone())
+            .await
+            .map_err(Error::Session)?;
+
+        // Extract namespace from options
+        let namespace = self.options.namespace.clone();
+
+        Ok(Engine::new(session, namespace))
     }
 }
