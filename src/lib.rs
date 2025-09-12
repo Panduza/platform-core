@@ -52,6 +52,7 @@ pub use panduza::fbs::StatusBuffer;
 pub use panduza::fbs::StatusBufferBuilder;
 pub use panduza::fbs::StructureBuffer;
 pub use panduza::fbs::StructureBufferBuilder;
+pub use panduza::path;
 pub use panduza::security::utils::ensure_panduza_programdata_dirs;
 pub use panduza::InstanceState;
 pub use panduza::TaskMonitor;
