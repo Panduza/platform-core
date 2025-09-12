@@ -1,15 +1,13 @@
-pub mod options;
-
 use zenoh::handlers::FifoChannelHandler;
 use zenoh::pubsub::{Publisher, Subscriber};
 use zenoh::sample::Sample;
 use zenoh::Session;
 
 // Temporary stub function until panduza::connection is fully implemented
-async fn new_connection(_options: panduza::pubsub::Options) -> Result<Session, zenoh::Error> {
+async fn new_connection(_config: panduza::Config) -> Result<Session, zenoh::Error> {
     // For now, create a basic zenoh session
     // TODO: Replace with proper panduza::connection::create_client_connection implementation
-    // TODO: Use the provided options to configure the session (ip, port, certificates, etc.)
+    // TODO: Use the provided config to configure the session (ip, port, certificates, etc.)
     zenoh::open(zenoh::Config::default()).await
 }
 
@@ -100,27 +98,27 @@ impl Engine {
 /// - Enables use in plugin contexts where async operations are not immediately available
 /// - Defers the actual async connection establishment until explicitly requested
 pub struct EngineBuilder {
-    options: panduza::pubsub::Options,
+    config: panduza::Config,
 }
 
 impl EngineBuilder {
-    /// Creates a new builder instance with the specified options
+    /// Creates a new builder instance with the specified config
     /// Synchronous operation suitable for plugin initialization
-    pub fn new(options: panduza::pubsub::Options) -> Self {
-        Self { options }
+    pub fn new(config: panduza::Config) -> Self {
+        Self { config }
     }
 
     /// Consumes the builder and creates the actual Engine instance
     /// Establishes the Zenoh connection and finalizes the engine setup
     /// Must be called within an async context
     pub async fn build(self) -> Result<Engine, Error> {
-        // Create Zenoh session using the options
-        let session = new_connection(self.options.clone())
+        // Create Zenoh session using the config
+        let session = new_connection(self.config.clone())
             .await
             .map_err(Error::Session)?;
 
-        // Extract namespace from options
-        let namespace = self.options.namespace.clone();
+        // Extract namespace from config
+        let namespace = None; // TODO: Extract namespace from panduza::Config when available
 
         Ok(Engine::new(session, namespace))
     }
