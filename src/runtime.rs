@@ -292,7 +292,7 @@ impl RuntimeBuilder {
     }
 
     pub async fn start(self) -> Runtime {
-        let rr = self.engine_builder.build().await;
+        let rr = self.engine_builder.build().await.unwrap();
 
         Runtime::new(
             self.factory,

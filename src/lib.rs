@@ -42,8 +42,10 @@ pub mod tracing;
 pub use tracing::Logger; // only this one must stay at the end (others deprecated)
 
 // Client public export
-pub use panduza::fbs::AttributeEntryBuffer;
-pub use panduza::fbs::AttributeEntryBufferBuilder;
+pub use panduza::config::Config as ClientConfig;
+pub use panduza::config::EndpointConfig;
+pub use panduza::config::SecurityConfig;
+
 pub use panduza::fbs::InstanceStatusBuffer;
 pub use panduza::fbs::NotificationBuffer;
 pub use panduza::fbs::NotificationBufferBuilder;
@@ -54,6 +56,8 @@ pub use panduza::fbs::StatusBuffer;
 pub use panduza::fbs::StatusBufferBuilder;
 pub use panduza::fbs::StructureBuffer;
 pub use panduza::fbs::StructureBufferBuilder;
+pub use panduza::path;
+pub use panduza::security::utils::ensure_panduza_programdata_dirs;
 pub use panduza::InstanceState;
 pub use panduza::TaskMonitor;
 pub use panduza::Topic;
@@ -61,8 +65,6 @@ pub use panduza::Topic;
 /// The engine is the core object that will handle the connections and the events
 ///
 mod engine;
-pub use engine::new_engine;
-pub use engine::options::EngineOptions;
 pub use engine::Engine;
 pub use engine::EngineBuilder;
 
